@@ -194,6 +194,7 @@ def run_higl(args):
 
     file_name = "{}_{}_{}".format(args.env_name, args.algo, args.seed)
     output_data = {"frames": [], "reward": [], "dist": []}
+    train_data = {"h_state_x": [], "h_state_y": [], }
 
     env.seed(args.seed)
     torch.manual_seed(args.seed)
@@ -503,6 +504,8 @@ def run_higl(args):
             episode_num += 1
 
             subgoal = manager_policy.sample_goal(state, goal)
+            train_data["h_state_x"].append(state[0])
+            train_data["h_state_y"].append(state[1])
             timesteps_since_subgoal = 0
             manager_transition = OrderedDict({
                 'state': state,
@@ -588,7 +591,8 @@ def run_higl(args):
             manager_buffer.add(manager_transition)
 
             subgoal = manager_policy.sample_goal(state, goal)
-
+            train_data["h_state_x"].append(state[0])
+            train_data["h_state_y"].append(state[1])
             if not args.absolute_goal:
                 subgoal = man_noise.perturb_action(subgoal, min_action=-man_scale, max_action=man_scale)
             else:
@@ -640,4 +644,6 @@ def run_higl(args):
 
     output_df = pd.DataFrame(output_data)
     output_df.to_csv(os.path.join("./results", file_name+".csv"), float_format="%.4f", index=False)
+    traindata_df = pd.DataFrame(train_data)
+    traindata_df.to_csv(os.path.join("./results", file_name+"_traindata.csv"), float_format="%.4f", index=False)
     print("Training finished.")

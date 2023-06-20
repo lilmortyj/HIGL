@@ -11,6 +11,11 @@ def get_goal_sample_fn(env_name, evaluate, fix_goal=False, manual_goal=None):
             return lambda: np.array([0., 16.])
         else:
             return lambda: np.random.uniform((-4, -4), (20, 20))
+    elif env_name == "AntMazeT-v0":
+        if evaluate:
+            return lambda: np.array([15., 0.])
+        else:
+            return lambda: np.random.uniform((-4, -6), (20, 6))
     elif env_name == 'AntMazeSparse' or env_name == "AntMazeW-v2":
         return lambda: np.array([2., 9.])
     elif env_name == "PointMaze":
@@ -44,14 +49,14 @@ def get_reward_fn(env_name, goal_dim, step_style=False):
         #    return lambda obs, goal: -(np.linalg.norm(obs[:2] - goal, axis=-1) > 5).astype(np.float32)
         if env_name in ['AntMaze-v1', 'AntMazeL-v1', 'PointMaze-v1']:
             return lambda obs, goal: -(np.linalg.norm(obs[:goal_dim] - goal, axis=-1) > 2.5).astype(np.float32)
-        elif env_name in ["PointMaze-v0", "AntMaze-v0"]:
+        elif env_name in ["PointMaze-v0", "AntMaze-v0", "AntMazeT-v0"]:
             return lambda obs, goal: -(np.linalg.norm(obs[:goal_dim] - goal, axis=-1) > 5.0).astype(np.float32)
         elif env_name in ['AntMazeW-v2']:
             return lambda obs, goal: -(np.linalg.norm(obs[:goal_dim] - goal, axis=-1) > 1.0).astype(np.float32)
         else:
             assert False, 'Unknown env'
     else:
-        if env_name in ['AntMaze', 'PointMaze', "AntMazeSmall", "AntMazeL", "PointMaze-v1", "AntMaze-v1", "AntMaze-v0",
+        if env_name in ['AntMaze', 'PointMaze', "AntMazeSmall", "AntMazeL", "PointMaze-v1", "AntMaze-v1", "AntMaze-v0", "AntMazeT-v0",
                         "AntMazeL-v1", "PointMaze-v0",
                         "AntMazeW-v2"]:
             return lambda obs, goal: -np.sum(np.square(obs[:goal_dim] - goal)) ** 0.5
@@ -64,12 +69,12 @@ def get_reward_fn(env_name, goal_dim, step_style=False):
 def get_success_fn(env_name, step_style=False):
     if step_style:
         if env_name in ['AntMaze-v1', 'AntMazeL-v1', 'PointMaze-v1',
-                         "PointMaze-v0", "AntMazeW-v2", "AntMaze-v0"]:
+                         "PointMaze-v0", "AntMazeW-v2", "AntMaze-v0", "AntMazeT-v0"]:
             return lambda reward: reward == 0
         else:
             assert False, 'Unknown env'
     else:
-        if env_name in ['AntMaze', 'AntMazeSmall', "AntMazeL", "PointMaze-v0", "AntMaze-v0"]:
+        if env_name in ['AntMaze', 'AntMazeSmall', "AntMazeL", "PointMaze-v0", "AntMaze-v0", "AntMazeT-v0"]:
             return lambda reward: reward > -5.0
         elif env_name in ["PointMaze-v1", "AntMaze-v1", "AntMazeL-v1"]:
             return lambda reward: reward > -2.5
@@ -123,7 +128,7 @@ class EnvWithGoal(object):
     def __init__(self, base_env, env_name, fix_goal=False, manual_goals=None, step_style=False,
                  stochastic_xy=False, stochastic_sigma=0.):
         if env_name in ['AntMaze-v1', "PointMaze-v0", "AntMazeSparse", "AntMazeW-v2",
-                        "PointMaze-v1", "AntMaze-v0"]:
+                        "PointMaze-v1", "AntMaze-v0", "AntMazeT-v0"]:
             self.goal_dim = 2
         else:
             raise NotImplementedError
@@ -137,7 +142,7 @@ class EnvWithGoal(object):
         # self.distance_threshold = 5 if (env_name in ['AntMaze', 'AntMazeSmall', "AntMazeL", "PointMaze-v1", "AntMaze-v1", "AntMazeL-v1"]) else 1
         self.count = 0
         self.early_stop = False if (env_name in ['AntMaze', 'AntMazeSmall', "AntMazeL", "PointMaze-v1",
-                                                 "AntMaze-v1", "AntMazeL-v1", "AntMaze-v0"]) else True
+                                                 "AntMaze-v1", "AntMazeL-v1", "AntMaze-v0", "AntMazeT-v0"]) else True
         self.early_stop_flag = False
         self.fix_goal = fix_goal
         self.manual_goals = manual_goals

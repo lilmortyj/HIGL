@@ -128,6 +128,73 @@ class MazeEnv(gym.Env):
                         conaffinity="1",
                         rgba="0.4 0.4 0.4 1",
                     )
+                elif struct == 2:  # * T block.
+                    ET.SubElement(
+                        worldbody, "geom",
+                        name="t_block_%d_%d_1" % (i, j),
+                        pos="%f %f %f" % (j * size_scaling - 5/16 * size_scaling - torso_x,
+                                            i * size_scaling - torso_y,
+                                            height_offset +
+                                            height / 2 * size_scaling),  # * 2 if not elevated else 6
+                        size="%f %f %f" % (9/8 * 0.5 * size_scaling,
+                                            1/32 * 0.5 * size_scaling,
+                                            height / 2 * size_scaling),  # * 2 -> 4
+                        type="box",
+                        material="",
+                        contype="1",
+                        conaffinity="1",
+                        rgba="0.5 0.5 0.5 1",
+                    )
+                    ET.SubElement(
+                        worldbody, "geom",
+                        name="t_block_%d_%d_2" % (i, j),
+                        pos="%f %f %f" % (j * size_scaling + 3/8 * size_scaling - torso_x,
+                                            i * size_scaling - torso_y,
+                                            height_offset +
+                                            height / 2 * size_scaling),  # * 2 if not elevated else 6
+                        size="%f %f %f" % (1/4 * 0.5 * size_scaling,
+                                            7/16 * 0.5 * size_scaling,
+                                            height / 2 * size_scaling),  # * 2 -> 4
+                        type="box",
+                        material="",
+                        contype="1",
+                        conaffinity="1",
+                        rgba="0.5 0.5 0.5 1",
+                    )
+                elif struct == 3:  # * Down Walls
+                    ET.SubElement(
+                        worldbody, "geom",
+                        name="block_%d_%d" % (i, j),
+                        pos="%f %f %f" % (j * size_scaling - torso_x,
+                                            i * size_scaling - torso_y - 1/8 * size_scaling,
+                                            height_offset +
+                                            height / 2 * size_scaling),  # * 2 if not elevated else 6
+                        size="%f %f %f" % (0.5 * size_scaling,
+                                            3/4 * 0.5 * size_scaling,
+                                            height / 2 * size_scaling),  # * 2 -> 4
+                        type="box",
+                        material="",
+                        contype="1",
+                        conaffinity="1",
+                        rgba="0.4 0.4 0.4 1",
+                    )
+                elif struct == 4:  # * Up Walls
+                    ET.SubElement(
+                        worldbody, "geom",
+                        name="block_%d_%d" % (i, j),
+                        pos="%f %f %f" % (j * size_scaling - torso_x,
+                                            i * size_scaling - torso_y + 1/8 * size_scaling,
+                                            height_offset +
+                                            height / 2 * size_scaling),  # * 2 if not elevated else 6
+                        size="%f %f %f" % (0.5 * size_scaling,
+                                            3/4 * 0.5 * size_scaling,
+                                            height / 2 * size_scaling),  # * 2 -> 4
+                        type="box",
+                        material="",
+                        contype="1",
+                        conaffinity="1",
+                        rgba="0.4 0.4 0.4 1",
+                    )
                 elif maze_env_utils.can_move(struct):    # Movable block.
                     # The "falling" blocks are shrunk slightly and increased in mass to
                     # ensure that it can fall easily through a gap in the platform blocks.
