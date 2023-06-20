@@ -472,6 +472,7 @@ class Controller(object):
 
         avg_act_loss, avg_crit_loss = 0., 0.
 
+        # * iterations: the same as the current timestep of an episode
         for it in range(iterations):
             # Sample replay buffer
             x, y, ag, ag_next, sg, u, r, d, _, _, _ = replay_buffer.sample(batch_size)

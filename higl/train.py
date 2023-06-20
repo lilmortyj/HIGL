@@ -66,8 +66,10 @@ def evaluate_policy(env,
                 new_state = new_obs["observation"]
 
                 subgoal = controller_policy.subgoal_transition(achieved_goal, subgoal, new_achieved_goal)
-
+                
+                # * higher-level environment reward
                 avg_reward += reward
+                # * lower-level intrinsic reward
                 avg_controller_rew += calculate_controller_reward(achieved_goal, subgoal, new_achieved_goal,
                                                                   ctrl_rew_scale, action)
                 state = new_state
@@ -163,7 +165,7 @@ def run_higl(args):
         no_xy = False
     else:
         if "Point" in args.env_name or "Ant" in args.env_name:
-            no_xy = True
+            no_xy = True  # * mask the xy coordinates of the states (same as HIRO)
         else:
             no_xy = False
 
@@ -219,6 +221,7 @@ def run_higl(args):
                                            reward_scale=args.ctrl_rew_scale)
     manager_buffer = utils.ReplayBuffer(maxsize=args.man_buffer_size)
 
+    # * lower-level policy
     controller_policy = higl.Controller(
         state_dim=state_dim,
         goal_dim=controller_goal_dim,
@@ -232,6 +235,7 @@ def run_higl(args):
         noise_clip=train_ctrl_noise_clip,
     )
 
+    # * higher-level policy
     manager_policy = higl.Manager(
         state_dim=state_dim,
         goal_dim=goal_dim,
@@ -366,7 +370,7 @@ def run_higl(args):
                 writer.add_scalar("data/controller_ep_rew", episode_reward, total_timesteps)
 
                 # Train manager
-                if timesteps_since_manager >= args.train_manager_freq:
+                if timesteps_since_manager >= args.train_manager_freq:  # * 10
                     timesteps_since_manager = 0
                     r_margin = (args.r_margin_pos + args.r_margin_neg) / 2
 
@@ -397,7 +401,7 @@ def run_higl(args):
                         print("Manager landmark loss: {:.3f}".format(man_ld_loss))
 
                 # Evaluate
-                if timesteps_since_eval >= args.eval_freq:
+                if timesteps_since_eval >= args.eval_freq:  # * 5000
                     timesteps_since_eval = 0
                     avg_ep_rew, avg_controller_rew, avg_steps, avg_env_finish, \
                     final_x, final_y, final_z, final_subgoal_x, final_subgoal_y, final_subgoal_z = \
@@ -538,9 +542,9 @@ def run_higl(args):
 
         controller_reward = calculate_controller_reward(achieved_goal, subgoal, next_achieved_goal,
                                                         args.ctrl_rew_scale, action)
+        controller_goal = subgoal  # ! fix bug for subgoal dislocation
         subgoal = controller_policy.subgoal_transition(achieved_goal, subgoal, next_achieved_goal)
 
-        controller_goal = subgoal
         if env_done:
             done = True
 
@@ -557,7 +561,7 @@ def run_higl(args):
             'next_state': next_state,
             'achieved_goal': achieved_goal,
             'next_achieved_goal': next_achieved_goal,
-            'goal': controller_goal,
+            'goal': controller_goal,  # ! subgoal dislocation?
             'action': action,
             'reward': controller_reward,
             'done': float(ctrl_done),
@@ -577,7 +581,7 @@ def run_higl(args):
         timesteps_since_manager += 1
         timesteps_since_subgoal += 1
 
-        if timesteps_since_subgoal % args.manager_propose_freq == 0:
+        if timesteps_since_subgoal % args.manager_propose_freq == 0:  # * 10
             manager_transition['next_state'] = state
             manager_transition['next_achieved_goal'] = achieved_goal
             manager_transition['done'] = float(done)
