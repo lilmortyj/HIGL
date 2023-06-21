@@ -49,3 +49,8 @@ Also, to run the MuJoCo experiments, a license is required (see [here](https://w
 ./scripts/higl_ant_maze_u_stoch.sh sparse 10e5 0 2
 ```
 
+- Ant Maze T
+```
+CUDA_VISIBLE_DEVICES=0 ./scripts/hiro_ant_maze_t.sh 0 2
+CUDA_VISIBLE_DEVICES=0 ./scripts/hiro_ant_maze_t_eval.sh 0 2
+```

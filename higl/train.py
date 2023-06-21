@@ -1,3 +1,6 @@
+import itertools
+from matplotlib import pyplot as plt
+import seaborn as sns
 import torch
 import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
@@ -20,6 +23,7 @@ from envs import EnvWithGoal
 
 
 def evaluate_policy(env,
+                    args,
                     env_name,
                     manager_policy,
                     controller_policy,
@@ -53,6 +57,56 @@ def evaluate_policy(env,
 
                 step_count += 1
                 global_steps += 1
+                if args.h_v_heatmap:
+                    # grid clip
+                    mesh_scale = 4
+                    if env_name == "AntMazeT-v0":
+                        x_lower, y_lower = -3.5, -5.5
+                        x_higher, y_higher = 19.5, 5.5
+                    elif "AntMaze" in env_name:
+                        x_lower, y_lower = -3.5, -3.5
+                        x_higher, y_higher = 19.5, 19.5
+                    else:
+                        raise NotImplementedError
+                    mesh_x = int(x_higher - x_lower) * mesh_scale + 1
+                    mesh_y = int(y_higher - y_lower) * mesh_scale + 1
+                    x_length = np.linspace(x_lower, x_higher, mesh_x)
+                    y_length = np.linspace(y_lower, y_higher, mesh_y)
+                    initial_list = list(itertools.product(x_length, y_length))
+                    subgoal_points = np.array(initial_list).reshape(-1,2)
+                    
+                    heatmap_path = os.path.join('./pics', f"h_value_{eval_ep}")
+                    if not os.path.exists(heatmap_path):
+                        os.makedirs(heatmap_path)
+                    state_, goal_, subgoal_ = higl.get_tensor(state), higl.get_tensor(goal), higl.get_tensor(subgoal)
+                    ture_subgoal_qvalue = manager_policy.value_estimate(state_, goal_, subgoal_)[0]
+                    endgoals = np.repeat(goal.reshape(1,-1),subgoal_points.shape[0],axis=0)
+                    states = np.repeat(state.reshape(1,-1),subgoal_points.shape[0],axis=0)
+                    states_, endgoals_, subgoal_points_ = higl.get_tensor(states), higl.get_tensor(endgoals), higl.get_tensor(subgoal_points)
+                    state_points_qvalue = manager_policy.value_estimate(states_, endgoals_, subgoal_points_)[0].reshape(mesh_x, mesh_y)
+                    state_id, subgoal_id, goal_id = np.zeros_like(state, dtype=int), np.zeros_like(subgoal, dtype=int), np.zeros_like(goal, dtype=int)
+                    state_id[0] = np.clip((state[0] - x_lower) * mesh_scale, 0, mesh_x-1)
+                    state_id[1] = np.clip((state[1] - y_lower) * mesh_scale, 0, mesh_y-1)
+                    subgoal_id[0] = np.clip((subgoal[0] - x_lower) * mesh_scale, 0, mesh_x-1)
+                    subgoal_id[1] = np.clip((subgoal[1] - y_lower) * mesh_scale, 0, mesh_y-1)
+                    goal_id[0] = np.clip((goal[0] - x_lower) * mesh_scale, 0, mesh_x-1)
+                    goal_id[1] = np.clip((goal[1] - y_lower) * mesh_scale, 0, mesh_y-1)
+                    state_points_qvalue[state_id[0], state_id[1]] = -100
+                    state_points_qvalue[subgoal_id[0],subgoal_id[1]] = -100
+                    state_points_qvalue[goal_id[0],goal_id[1]] = -100
+
+                    plt.subplots(figsize=(11,9), nrows=1)
+                    # new_cmap = sns.color_palette("rocket", 200)[0:2]
+                    # c = sns.color_palette("rocket", 20)[5:]
+                    # new_cmap.extend(c)
+                    sns.heatmap(state_points_qvalue.cpu().numpy())
+                    # sns.heatmap(state_points_qvalue,cmap="rocket",robust=True)
+                    plt.title("AntMazeT Heatmap Subgoal: %d Q: %.2f Step: %d Total Step: %d"%(step_count // manager_propose_frequency, ture_subgoal_qvalue, step_count % manager_propose_frequency, step_count), fontsize=20)
+                    plt.axis("off")
+                    # print("state_points_qvalue: ", state_points_qvalue)
+                    # print("heatmap_path: ", heatmap_path)
+                    plt.savefig(heatmap_path + f'/{step_count}.png', dpi=300,bbox_inches='tight')
+                    plt.close()
                 action = controller_policy.select_action(state, subgoal)
                 new_obs, reward, done, info = env.step(action)
                 is_success = info['is_success']
@@ -337,7 +391,7 @@ def run_higl(args):
         novelty_pq = None
         RND = None
 
-    while total_timesteps < args.max_timesteps:
+    while not args.evaluate and total_timesteps < args.max_timesteps:
         if done:
             # Update Novelty Priority Queue
             if ep_obs_seq is not None:
@@ -406,7 +460,7 @@ def run_higl(args):
                     timesteps_since_eval = 0
                     avg_ep_rew, avg_controller_rew, avg_steps, avg_env_finish, \
                     final_x, final_y, final_z, final_subgoal_x, final_subgoal_y, final_subgoal_z = \
-                        evaluate_policy(env, args.env_name, manager_policy, controller_policy,
+                        evaluate_policy(env, args, args.env_name, manager_policy, controller_policy,
                                         calculate_controller_reward, args.ctrl_rew_scale,
                                         args.manager_propose_freq, len(evaluations))
 
@@ -620,7 +674,7 @@ def run_higl(args):
     # Final evaluation
     avg_ep_rew, avg_controller_rew, avg_steps, avg_env_finish, \
     final_x, final_y, final_z, final_subgoal_x, final_subgoal_y, final_subgoal_z = \
-        evaluate_policy(env, args.env_name, manager_policy, controller_policy, calculate_controller_reward,
+        evaluate_policy(env, args, args.env_name, manager_policy, controller_policy, calculate_controller_reward,
                         args.ctrl_rew_scale, args.manager_propose_freq, len(evaluations))
 
     writer.add_scalar("eval/avg_ep_rew", avg_ep_rew, total_timesteps)
@@ -638,12 +692,15 @@ def run_higl(args):
         output_data["reward"].append(avg_ep_rew)
     output_data["dist"].append(-avg_controller_rew)
 
-    if args.save_models:
-        controller_policy.save(args.save_dir, args.env_name, args.algo, args.version, args.seed)
-        manager_policy.save(args.save_dir, args.env_name, args.algo, args.version, args.seed)
+    if not args.evaluate:
+        if args.save_models:
+            controller_policy.save(args.save_dir, args.env_name, args.algo, args.version, args.seed)
+            manager_policy.save(args.save_dir, args.env_name, args.algo, args.version, args.seed)
 
-    output_df = pd.DataFrame(output_data)
-    output_df.to_csv(os.path.join("./results", file_name+".csv"), float_format="%.4f", index=False)
-    traindata_df = pd.DataFrame(train_data)
-    traindata_df.to_csv(os.path.join("./results", file_name+"_traindata.csv"), float_format="%.4f", index=False)
-    print("Training finished.")
+        output_df = pd.DataFrame(output_data)
+        output_df.to_csv(os.path.join("./results", file_name+".csv"), float_format="%.4f", index=False)
+        traindata_df = pd.DataFrame(train_data)
+        traindata_df.to_csv(os.path.join("./results", file_name+"_traindata.csv"), float_format="%.4f", index=False)
+        print("Training finished.")
+    else:
+        print("Evaluation finished.")
