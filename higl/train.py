@@ -1,3 +1,4 @@
+import datetime
 import itertools
 from matplotlib import pyplot as plt
 import seaborn as sns
@@ -21,6 +22,7 @@ from goal_env.mujoco import *
 
 from envs import EnvWithGoal
 
+TIMESTAMP = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
 
 def evaluate_policy(env,
                     args,
@@ -75,7 +77,7 @@ def evaluate_policy(env,
                     initial_list = list(itertools.product(x_length, y_length))
                     subgoal_points = np.array(initial_list).reshape(-1,2)
                     
-                    heatmap_path = os.path.join('./pics', f"h_value_{eval_ep}")
+                    heatmap_path = os.path.join(os.path.join('./pics', TIMESTAMP), f"h_value_{env.task_id}")
                     if not os.path.exists(heatmap_path):
                         os.makedirs(heatmap_path)
                     state_, goal_, subgoal_ = higl.get_tensor(state), higl.get_tensor(goal), higl.get_tensor(subgoal)
@@ -84,33 +86,33 @@ def evaluate_policy(env,
                     states = np.repeat(state.reshape(1,-1),subgoal_points.shape[0],axis=0)
                     states_, endgoals_, subgoal_points_ = higl.get_tensor(states), higl.get_tensor(endgoals), higl.get_tensor(subgoal_points)
                     state_points_qvalue = manager_policy.value_estimate(states_, endgoals_, subgoal_points_)[0].reshape(mesh_x, mesh_y)
-                    state_id, subgoal_id, goal_id = np.zeros_like(state, dtype=int), np.zeros_like(subgoal, dtype=int), np.zeros_like(goal, dtype=int)
-                    state_id[0] = np.clip((state[0] - x_lower) * mesh_scale, 0, mesh_x-1)
-                    state_id[1] = np.clip((state[1] - y_lower) * mesh_scale, 0, mesh_y-1)
-                    subgoal_id[0] = np.clip((subgoal[0] - x_lower) * mesh_scale, 0, mesh_x-1)
-                    subgoal_id[1] = np.clip((subgoal[1] - y_lower) * mesh_scale, 0, mesh_y-1)
-                    goal_id[0] = np.clip((goal[0] - x_lower) * mesh_scale, 0, mesh_x-1)
-                    goal_id[1] = np.clip((goal[1] - y_lower) * mesh_scale, 0, mesh_y-1)
-                    state_points_qvalue[state_id[0], state_id[1]] = -100
-                    state_points_qvalue[subgoal_id[0],subgoal_id[1]] = -100
-                    state_points_qvalue[goal_id[0],goal_id[1]] = -100
+                    state_id, subgoal_id, goal_id = np.zeros(2, dtype=int), np.zeros(2, dtype=int), np.zeros(2, dtype=int)
+                    state_id[0] = np.clip(np.ceil((state[0] - x_lower) * mesh_scale), 0, mesh_x-1)
+                    state_id[1] = np.clip(np.ceil((state[1] - y_lower) * mesh_scale), 0, mesh_y-1)
+                    subgoal_id[0] = np.clip(np.ceil((state[0] + subgoal[0] - x_lower) * mesh_scale), 0, mesh_x-1)
+                    subgoal_id[1] = np.clip(np.ceil((state[1] + subgoal[1] - y_lower) * mesh_scale), 0, mesh_y-1)
+                    goal_id[0] = np.clip(np.ceil((goal[0] - x_lower) * mesh_scale), 0, mesh_x-1)
+                    goal_id[1] = np.clip(np.ceil((goal[1] - y_lower) * mesh_scale), 0, mesh_y-1)
+                    state_points_qvalue[state_id[0], state_id[1]] = 0
+                    state_points_qvalue[subgoal_id[0],subgoal_id[1]] = -1000
+                    state_points_qvalue[goal_id[0],goal_id[1]] = -1500
 
-                    plt.subplots(figsize=(11,9), nrows=1)
+                    plt.subplots(figsize=(9,12), nrows=1)
                     # new_cmap = sns.color_palette("rocket", 200)[0:2]
                     # c = sns.color_palette("rocket", 20)[5:]
                     # new_cmap.extend(c)
-                    sns.heatmap(state_points_qvalue.cpu().numpy())
+                    sns.heatmap(state_points_qvalue.cpu().numpy(), vmax=0, vmin=-1500)
                     # sns.heatmap(state_points_qvalue,cmap="rocket",robust=True)
                     plt.title("AntMazeT Heatmap Subgoal: %d Q: %.2f Step: %d Total Step: %d"%(step_count // manager_propose_frequency, ture_subgoal_qvalue, step_count % manager_propose_frequency, step_count), fontsize=20)
                     plt.axis("off")
                     # print("state_points_qvalue: ", state_points_qvalue)
                     # print("heatmap_path: ", heatmap_path)
-                    plt.savefig(heatmap_path + f'/{step_count}.png', dpi=300,bbox_inches='tight')
+                    plt.savefig(heatmap_path + f'/{step_count}.png', dpi=300, bbox_inches='tight')
                     plt.close()
                 action = controller_policy.select_action(state, subgoal)
                 new_obs, reward, done, info = env.step(action)
                 is_success = info['is_success']
-                if is_success:
+                if is_success:  # * none early stop when training while early stop when evaluating
                     env_goals_achieved += 1
                     goals_achieved += 1
                     done = True
@@ -231,7 +233,7 @@ def run_higl(args):
 
     controller_goal_dim = obs["achieved_goal"].shape[0]
 
-    tb_path = "{}/{}/{}/{}".format(args.env_name, args.algo, args.version, args.seed)
+    tb_path = "{}/{}/{}/{}/{}".format(args.env_name, args.algo, args.version, args.seed, TIMESTAMP)
     writer = SummaryWriter(log_dir=os.path.join(args.log_dir, tb_path))
 
     # Write Hyperparameters to file
@@ -247,7 +249,10 @@ def run_higl(args):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     file_name = "{}_{}_{}".format(args.env_name, args.algo, args.seed)
-    output_data = {"frames": [], "reward": [], "dist": []}
+    output_data = dict()
+    num_eval_task = env.num_eval_task()
+    for task_id in range(num_eval_task):
+        output_data.update({f"frames{task_id}": [], f"reward{task_id}": [], f"dist{task_id}": []})
     train_data = {"h_state_x": [], "h_state_y": [], }
 
     env.seed(args.seed)
@@ -458,34 +463,36 @@ def run_higl(args):
                 # Evaluate
                 if timesteps_since_eval >= args.eval_freq:  # * 5000
                     timesteps_since_eval = 0
-                    avg_ep_rew, avg_controller_rew, avg_steps, avg_env_finish, \
-                    final_x, final_y, final_z, final_subgoal_x, final_subgoal_y, final_subgoal_z = \
-                        evaluate_policy(env, args, args.env_name, manager_policy, controller_policy,
-                                        calculate_controller_reward, args.ctrl_rew_scale,
-                                        args.manager_propose_freq, len(evaluations))
+                    for task_id in range(num_eval_task):
+                        env.task_id = task_id
+                        avg_ep_rew, avg_controller_rew, avg_steps, avg_env_finish, \
+                        final_x, final_y, final_z, final_subgoal_x, final_subgoal_y, final_subgoal_z = \
+                            evaluate_policy(env, args, args.env_name, manager_policy, controller_policy,
+                                            calculate_controller_reward, args.ctrl_rew_scale,
+                                            args.manager_propose_freq, len(evaluations))
 
-                    writer.add_scalar("eval/avg_ep_rew", avg_ep_rew, total_timesteps)
-                    writer.add_scalar("eval/avg_controller_rew", avg_controller_rew, total_timesteps)
+                        writer.add_scalar(f"eval{task_id}/avg_ep_rew", avg_ep_rew, total_timesteps)
+                        writer.add_scalar(f"eval{task_id}/avg_controller_rew", avg_controller_rew, total_timesteps)
 
-                    if "Maze" in args.env_name or args.env_name in ["Reacher3D-v0", "Pusher-v0"]:
-                        writer.add_scalar("eval/avg_steps_to_finish", avg_steps, total_timesteps)
-                        writer.add_scalar("eval/perc_env_goal_achieved", avg_env_finish, total_timesteps)
+                        if "Maze" in args.env_name or args.env_name in ["Reacher3D-v0", "Pusher-v0"]:
+                            writer.add_scalar(f"eval{task_id}/avg_steps_to_finish", avg_steps, total_timesteps)
+                            writer.add_scalar(f"eval{task_id}/perc_env_goal_achieved", avg_env_finish, total_timesteps)
 
-                    evaluations.append([avg_ep_rew, avg_controller_rew, avg_steps])
-                    output_data["frames"].append(total_timesteps)
-                    if "Maze" in args.env_name or args.env_name in ["Reacher3D-v0", "Pusher-v0"]:
-                        output_data["reward"].append(avg_env_finish)
-                    else:
-                        output_data["reward"].append(avg_ep_rew)
-                    output_data["dist"].append(-avg_controller_rew)
+                        evaluations.append([avg_ep_rew, avg_controller_rew, avg_steps])
+                        output_data[f"frames{task_id}"].append(total_timesteps)
+                        if "Maze" in args.env_name or args.env_name in ["Reacher3D-v0", "Pusher-v0"]:
+                            output_data[f"reward{task_id}"].append(avg_env_finish)
+                        else:
+                            output_data[f"reward{task_id}"].append(avg_ep_rew)
+                        output_data[f"dist{task_id}"].append(-avg_controller_rew)
 
                     if args.save_models:
-                        controller_policy.save(args.save_dir, args.env_name, args.algo, args.version, args.seed)
-                        manager_policy.save(args.save_dir, args.env_name, args.algo, args.version, args.seed)
+                        controller_policy.save(os.path.join(args.save_dir, TIMESTAMP), args.env_name, args.algo, args.version, args.seed)
+                        manager_policy.save(os.path.join(args.save_dir, TIMESTAMP), args.env_name, args.algo, args.version, args.seed)
 
                     if args.save_replay_buffer is not None:
-                        manager_buffer.save(args.save_replay_buffer + "_manager")
-                        controller_buffer.save(args.save_replay_buffer + "_controller")
+                        manager_buffer.save(os.path.join(args.save_replay_buffer, TIMESTAMP) + "_manager")
+                        controller_buffer.save(os.path.join(args.save_replay_buffer, TIMESTAMP) + "_controller")
 
                 # Train adjacency network
                 if args.algo in ["higl", "hrac"]:
@@ -520,7 +527,7 @@ def run_higl(args):
                                                 device=device, verbose=True)
 
                             if args.save_models:
-                                r_filename = os.path.join(args.save_dir,
+                                r_filename = os.path.join(os.path.join(args.save_dir, TIMESTAMP),
                                                           "{}_{}_{}_{}_a_network.pth".format(args.env_name,
                                                                                              args.algo,
                                                                                              args.version,
@@ -671,36 +678,40 @@ def run_higl(args):
                 'achieved_goal_seq': [achieved_goal]
             })
 
-    # Final evaluation
-    avg_ep_rew, avg_controller_rew, avg_steps, avg_env_finish, \
-    final_x, final_y, final_z, final_subgoal_x, final_subgoal_y, final_subgoal_z = \
-        evaluate_policy(env, args, args.env_name, manager_policy, controller_policy, calculate_controller_reward,
-                        args.ctrl_rew_scale, args.manager_propose_freq, len(evaluations))
+    eval_episodes = 1 if args.evaluate else 5
+    
+    for task_id in range(num_eval_task):
+        env.task_id = task_id
+        # Final evaluation
+        avg_ep_rew, avg_controller_rew, avg_steps, avg_env_finish, \
+        final_x, final_y, final_z, final_subgoal_x, final_subgoal_y, final_subgoal_z = \
+            evaluate_policy(env, args, args.env_name, manager_policy, controller_policy, calculate_controller_reward,
+                            args.ctrl_rew_scale, args.manager_propose_freq, len(evaluations), eval_episodes=eval_episodes)
 
-    writer.add_scalar("eval/avg_ep_rew", avg_ep_rew, total_timesteps)
-    writer.add_scalar("eval/avg_controller_rew", avg_controller_rew, total_timesteps)
+        writer.add_scalar(f"eval{task_id}/avg_ep_rew", avg_ep_rew, total_timesteps)
+        writer.add_scalar(f"eval{task_id}/avg_controller_rew", avg_controller_rew, total_timesteps)
 
-    if "Maze" in args.env_name or args.env_name in ["Reacher3D-v0", "Pusher-v0"]:
-        writer.add_scalar("eval/avg_steps_to_finish", avg_steps, total_timesteps)
-        writer.add_scalar("eval/perc_env_goal_achieved", avg_env_finish, total_timesteps)
+        if "Maze" in args.env_name or args.env_name in ["Reacher3D-v0", "Pusher-v0"]:
+            writer.add_scalar(f"eval{task_id}/avg_steps_to_finish", avg_steps, total_timesteps)
+            writer.add_scalar(f"eval{task_id}/perc_env_goal_achieved", avg_env_finish, total_timesteps)
 
-    evaluations.append([avg_ep_rew, avg_controller_rew, avg_steps])
-    output_data["frames"].append(total_timesteps)
-    if "Maze" in args.env_name or args.env_name in ["Reacher3D-v0", "Pusher-v0"]:
-        output_data["reward"].append(avg_env_finish)
-    else:
-        output_data["reward"].append(avg_ep_rew)
-    output_data["dist"].append(-avg_controller_rew)
+        evaluations.append([avg_ep_rew, avg_controller_rew, avg_steps])
+        output_data[f"frames{task_id}"].append(total_timesteps)
+        if "Maze" in args.env_name or args.env_name in ["Reacher3D-v0", "Pusher-v0"]:
+            output_data[f"reward{task_id}"].append(avg_env_finish)
+        else:
+            output_data[f"reward{task_id}"].append(avg_ep_rew)
+        output_data[f"dist{task_id}"].append(-avg_controller_rew)
 
     if not args.evaluate:
         if args.save_models:
-            controller_policy.save(args.save_dir, args.env_name, args.algo, args.version, args.seed)
-            manager_policy.save(args.save_dir, args.env_name, args.algo, args.version, args.seed)
+            controller_policy.save(os.path.join(args.save_dir, TIMESTAMP), args.env_name, args.algo, args.version, args.seed)
+            manager_policy.save(os.path.join(args.save_dir, TIMESTAMP), args.env_name, args.algo, args.version, args.seed)
 
         output_df = pd.DataFrame(output_data)
-        output_df.to_csv(os.path.join("./results", file_name+".csv"), float_format="%.4f", index=False)
+        output_df.to_csv(os.path.join(os.path.join("./results", TIMESTAMP), file_name+".csv"), float_format="%.4f", index=False)
         traindata_df = pd.DataFrame(train_data)
-        traindata_df.to_csv(os.path.join("./results", file_name+"_traindata.csv"), float_format="%.4f", index=False)
+        traindata_df.to_csv(os.path.join(os.path.join("./results", TIMESTAMP), file_name+"_traindata.csv"), float_format="%.4f", index=False)
         print("Training finished.")
     else:
         print("Evaluation finished.")

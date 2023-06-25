@@ -13,7 +13,7 @@ def get_goal_sample_fn(env_name, evaluate, fix_goal=False, manual_goal=None):
             return lambda: np.random.uniform((-4, -4), (20, 20))
     elif env_name == "AntMazeT-v0":
         if evaluate:
-            return lambda: np.array([15., 0.])
+            return lambda: np.array([[15., 0.],[11., 4.],[11., -4.]])
         else:
             return lambda: np.random.uniform((-4, -6), (20, 6))
     elif env_name == 'AntMazeSparse' or env_name == "AntMazeW-v2":
@@ -160,6 +160,9 @@ class EnvWithGoal(object):
         obs = self.base_env.reset()
         self.count = 0
         self.goal = self.goal_sample_fn()
+        if self.evaluate:
+            if len(self.goal.shape) != 1:
+                self.goal = self.goal[self.task_id]
         self.desired_goal = None if 'Sparse' in self.env_name else self.goal
 
         return {
@@ -167,6 +170,11 @@ class EnvWithGoal(object):
             'achieved_goal': obs[:self.goal_dim],
             'desired_goal': self.desired_goal,
         }
+    
+    def num_eval_task(self):
+        goal_sample_fn_ = get_goal_sample_fn(self.env_name, True, self.fix_goal, self.manual_goals)
+        goal_ =  goal_sample_fn_()
+        return 1 if len(goal_.shape) == 1 else len(goal_)
 
     def step(self, a):
         obs, _, done, info = self.base_env.step(a)
