@@ -12,11 +12,7 @@ def png2gif(path):
 
 if __name__=="__main__":
     paths = [
-        '../pics/h_value_0',
-        '../pics/h_value_1',
-        '../pics/h_value_2',
-        '../pics/h_value_3',
-        '../pics/h_value_4',
+        '../pics/20230627080754/h_value_0',
     ]
     for path in paths:
         png2gif(path)    

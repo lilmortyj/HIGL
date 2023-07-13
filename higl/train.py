@@ -80,30 +80,45 @@ def evaluate_policy(env,
                     heatmap_path = os.path.join(os.path.join('./pics', TIMESTAMP), f"h_value_{env.task_id}")
                     if not os.path.exists(heatmap_path):
                         os.makedirs(heatmap_path)
-                    state_, goal_, subgoal_ = higl.get_tensor(state), higl.get_tensor(goal), higl.get_tensor(subgoal)
+                    subgoal_new = manager_policy.sample_goal(state, goal)
+                    state_, goal_, subgoal_, subgoal_new_ = higl.get_tensor(state), higl.get_tensor(goal), higl.get_tensor(subgoal), higl.get_tensor(subgoal_new)
                     ture_subgoal_qvalue = manager_policy.value_estimate(state_, goal_, subgoal_)[0]
+                    subgoal_new_qvalue = manager_policy.value_estimate(state_, goal_, subgoal_new_)[0]
                     endgoals = np.repeat(goal.reshape(1,-1),subgoal_points.shape[0],axis=0)
                     states = np.repeat(state.reshape(1,-1),subgoal_points.shape[0],axis=0)
                     states_, endgoals_, subgoal_points_ = higl.get_tensor(states), higl.get_tensor(endgoals), higl.get_tensor(subgoal_points)
                     state_points_qvalue = manager_policy.value_estimate(states_, endgoals_, subgoal_points_)[0].reshape(mesh_x, mesh_y)
-                    state_id, subgoal_id, goal_id = np.zeros(2, dtype=int), np.zeros(2, dtype=int), np.zeros(2, dtype=int)
+                    state_id, subgoal_id, goal_id, subgoal_new_id = np.zeros(2, dtype=int), np.zeros(2, dtype=int), np.zeros(2, dtype=int), np.zeros(2, dtype=int)
                     state_id[0] = np.clip(np.ceil((state[0] - x_lower) * mesh_scale), 0, mesh_x-1)
                     state_id[1] = np.clip(np.ceil((state[1] - y_lower) * mesh_scale), 0, mesh_y-1)
                     subgoal_id[0] = np.clip(np.ceil((state[0] + subgoal[0] - x_lower) * mesh_scale), 0, mesh_x-1)
                     subgoal_id[1] = np.clip(np.ceil((state[1] + subgoal[1] - y_lower) * mesh_scale), 0, mesh_y-1)
                     goal_id[0] = np.clip(np.ceil((goal[0] - x_lower) * mesh_scale), 0, mesh_x-1)
                     goal_id[1] = np.clip(np.ceil((goal[1] - y_lower) * mesh_scale), 0, mesh_y-1)
-                    state_points_qvalue[state_id[0], state_id[1]] = 0
-                    state_points_qvalue[subgoal_id[0],subgoal_id[1]] = -1000
-                    state_points_qvalue[goal_id[0],goal_id[1]] = -1500
+                    subgoal_new_id[0] = np.clip(np.ceil((state[0] + subgoal_new[0] - x_lower) * mesh_scale), 0, mesh_x-1)
+                    subgoal_new_id[1] = np.clip(np.ceil((state[1] + subgoal_new[1] - y_lower) * mesh_scale), 0, mesh_y-1)
+                    # if step_count != 1:
+                    #     state_points_qvalue[state_id[0], state_id[1]] = 0
+                    #     state_points_qvalue[subgoal_id[0],subgoal_id[1]] = -1000
+                    #     state_points_qvalue[goal_id[0],goal_id[1]] = -1500
 
-                    plt.subplots(figsize=(9,12), nrows=1)
+                    plt.subplots(figsize=(12,12), nrows=1)
                     # new_cmap = sns.color_palette("rocket", 200)[0:2]
                     # c = sns.color_palette("rocket", 20)[5:]
                     # new_cmap.extend(c)
-                    sns.heatmap(state_points_qvalue.cpu().numpy(), vmax=0, vmin=-1500)
+                    Qs = state_points_qvalue.cpu().numpy()
+                    # if step_count == 1:
+                    max_Q = np.max(Qs)
+                    min_Q = np.min(Qs)
+                    Qs[state_id[0], state_id[1]] = max_Q
+                    Qs[subgoal_id[0],subgoal_id[1]] = min_Q + 1/4 * (max_Q - min_Q)
+                    Qs[goal_id[0],goal_id[1]] = min_Q
+                    Qs[subgoal_new_id[0], subgoal_new_id[1]] = max_Q
+                    sns.heatmap(Qs, vmax=max_Q, vmin=min_Q)
+                    # else:
+                    #     sns.heatmap(Qs, vmax=0, vmin=-1500)
                     # sns.heatmap(state_points_qvalue,cmap="rocket",robust=True)
-                    plt.title("AntMazeT Heatmap Subgoal: %d Q: %.2f Step: %d Total Step: %d"%(step_count // manager_propose_frequency, ture_subgoal_qvalue, step_count % manager_propose_frequency, step_count), fontsize=20)
+                    plt.title("AntMazeT Subgoal: %d Qg: %.2f Qg': %.2f Step: %d Total Step: %d"%(step_count // manager_propose_frequency, ture_subgoal_qvalue, subgoal_new_qvalue, step_count % manager_propose_frequency, step_count), fontsize=20)
                     plt.axis("off")
                     # print("state_points_qvalue: ", state_points_qvalue)
                     # print("heatmap_path: ", heatmap_path)

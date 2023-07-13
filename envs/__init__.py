@@ -13,7 +13,12 @@ def get_goal_sample_fn(env_name, evaluate, fix_goal=False, manual_goal=None):
             return lambda: np.random.uniform((-4, -4), (20, 20))
     elif env_name == "AntMazeT-v0":
         if evaluate:
-            return lambda: np.array([[15., 0.],[11., 4.],[11., -4.]])
+            return lambda: np.array([
+                # [15., 0.],[11., 4.],[11., -4.],
+                # [0., -2.],[0., -4.],[2.75, -4.],
+                [5.5, -4.],
+                # [8.25, -4.],
+            ])
         else:
             return lambda: np.random.uniform((-4, -6), (20, 6))
     elif env_name == 'AntMazeSparse' or env_name == "AntMazeW-v2":
