@@ -14,9 +14,9 @@ def get_goal_sample_fn(env_name, evaluate, fix_goal=False, manual_goal=None):
     elif env_name == "AntMazeT-v0":
         if evaluate:
             return lambda: np.array([
-                # [15., 0.],[11., 4.],[11., -4.],
+                [15., 0.],[11., 4.],[11., -4.],
                 # [0., -2.],[0., -4.],[2.75, -4.],
-                [5.5, -4.],
+                # [5.5, -4.],
                 # [8.25, -4.],
             ])
         else:
@@ -54,8 +54,10 @@ def get_reward_fn(env_name, goal_dim, step_style=False):
         #    return lambda obs, goal: -(np.linalg.norm(obs[:2] - goal, axis=-1) > 5).astype(np.float32)
         if env_name in ['AntMaze-v1', 'AntMazeL-v1', 'PointMaze-v1']:
             return lambda obs, goal: -(np.linalg.norm(obs[:goal_dim] - goal, axis=-1) > 2.5).astype(np.float32)
-        elif env_name in ["PointMaze-v0", "AntMaze-v0", "AntMazeT-v0"]:
+        elif env_name in ["PointMaze-v0", "AntMaze-v0"]:
             return lambda obs, goal: -(np.linalg.norm(obs[:goal_dim] - goal, axis=-1) > 5.0).astype(np.float32)
+        elif env_name in ["AntMazeT-v0"]:
+            return lambda obs, goal: -(np.linalg.norm(obs[:goal_dim] - goal, axis=-1) > 2.0).astype(np.float32)
         elif env_name in ['AntMazeW-v2']:
             return lambda obs, goal: -(np.linalg.norm(obs[:goal_dim] - goal, axis=-1) > 1.0).astype(np.float32)
         else:
@@ -79,10 +81,12 @@ def get_success_fn(env_name, step_style=False):
         else:
             assert False, 'Unknown env'
     else:
-        if env_name in ['AntMaze', 'AntMazeSmall', "AntMazeL", "PointMaze-v0", "AntMaze-v0", "AntMazeT-v0"]:
+        if env_name in ['AntMaze', 'AntMazeSmall', "AntMazeL", "PointMaze-v0", "AntMaze-v0"]:
             return lambda reward: reward > -5.0
         elif env_name in ["PointMaze-v1", "AntMaze-v1", "AntMazeL-v1"]:
             return lambda reward: reward > -2.5
+        elif env_name in ["AntMazeT-v0"]:
+            return lambda reward: reward > -2.0
         elif env_name in ["AntMazeW-v2"]:
             return lambda reward: reward > -1.0
         elif env_name == 'AntMazeSparse':
@@ -141,6 +145,7 @@ class EnvWithGoal(object):
         self.base_env = base_env
         self.env_name = env_name
         self.evaluate = False
+        # * higher-level reward function
         self.reward_fn = get_reward_fn(env_name, self.goal_dim, step_style)
         self.success_fn = get_success_fn(env_name, step_style)
         self.goal = None

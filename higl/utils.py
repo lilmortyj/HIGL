@@ -229,7 +229,7 @@ def get_reward_function(env, env_name, absolute_goal=False, binary_reward=False)
     if env_name in ["AntMaze-v1", "PointMaze-v1"]:
         distance_threshold = 2.5
     elif env_name == "AntMazeT-v0":
-        distance_threshold = 5.0
+        distance_threshold = 2.0
     elif env_name == "AntMazeW-v2":
         distance_threshold = 1
     if absolute_goal and binary_reward:
