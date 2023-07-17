@@ -187,6 +187,9 @@ def run_higl(args):
     save_dir_timestamp = os.path.join(args.save_dir, TIMESTAMP)
     if not os.path.exists(save_dir_timestamp):
         os.makedirs(save_dir_timestamp)
+    result_dir_timestamp = os.path.join("./results", TIMESTAMP)
+    if not os.path.exists(result_dir_timestamp):
+        os.makedirs(result_dir_timestamp)
     if not os.path.exists(args.log_dir):
         os.makedirs(args.log_dir)
     if not os.path.exists(os.path.join(args.log_dir, args.algo)):
@@ -510,8 +513,8 @@ def run_higl(args):
                         manager_policy.save(save_dir_timestamp, args.env_name, args.algo, args.version, args.seed)
 
                     if args.save_replay_buffer is not None:
-                        manager_buffer.save(os.path.join(args.save_replay_buffer, TIMESTAMP) + "_manager")
-                        controller_buffer.save(os.path.join(args.save_replay_buffer, TIMESTAMP) + "_controller")
+                        manager_buffer.save(args.save_replay_buffer + f"_{TIMESTAMP}_manager")
+                        controller_buffer.save(args.save_replay_buffer + f"_{TIMESTAMP}_manager")
 
                 # Train adjacency network
                 if args.algo in ["higl", "hrac"]:
@@ -728,9 +731,9 @@ def run_higl(args):
             manager_policy.save(save_dir_timestamp, args.env_name, args.algo, args.version, args.seed)
 
         output_df = pd.DataFrame(output_data)
-        output_df.to_csv(os.path.join(os.path.join("./results", TIMESTAMP), file_name+".csv"), float_format="%.4f", index=False)
+        output_df.to_csv(os.path.join(result_dir_timestamp, file_name+".csv"), float_format="%.4f", index=False)
         traindata_df = pd.DataFrame(train_data)
-        traindata_df.to_csv(os.path.join(os.path.join("./results", TIMESTAMP), file_name+"_traindata.csv"), float_format="%.4f", index=False)
+        traindata_df.to_csv(os.path.join(result_dir_timestamp, file_name+"_traindata.csv"), float_format="%.4f", index=False)
         print("Training finished.")
     else:
         print("Evaluation finished.")
