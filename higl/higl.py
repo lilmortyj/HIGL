@@ -28,6 +28,7 @@ def get_tensor(z):
 
 class Manager(object):
     def __init__(self,
+                 algo,
                  state_dim,
                  goal_dim,
                  action_dim,
@@ -53,6 +54,7 @@ class Manager(object):
                  planner_initial_sample=1000,
                  planner_goal_thr=-10.,
                  ):
+        self.algo = algo
         self.scale = scale
         self.actor = ManagerActor(state_dim,
                                   goal_dim,
@@ -137,9 +139,15 @@ class Manager(object):
         goal = get_tensor(goal)
 
         if to_numpy:
-            return self.actor(state, goal).cpu().data.numpy().squeeze()
+            if self.algo == 'td3':
+                return goal.cpu().data.numpy().squeeze()
+            else:
+                return self.actor(state, goal).cpu().data.numpy().squeeze()
         else:
-            return self.actor(state, goal).squeeze()
+            if self.algo == 'td3':
+                return goal.squeeze()
+            else:
+                return self.actor(state, goal).squeeze()
 
     def value_estimate(self, state, goal, subgoal):
         return self.critic(state, goal, subgoal)
@@ -240,6 +248,9 @@ class Manager(object):
         self.manager_buffer = replay_buffer
         avg_act_loss, avg_crit_loss, avg_goal_loss, avg_ld_loss, avg_bonus, avg_norm_sel = 0., 0., 0., 0., 0., 0.
         avg_scaled_norm_direction = get_tensor(np.array([0.] * self.action_dim)).squeeze()
+        
+        if self.algo == 'td3':
+            return avg_act_loss, avg_crit_loss, avg_goal_loss, avg_ld_loss, avg_scaled_norm_direction
 
         if algo == 'higl' and self.planner is None and total_timesteps >= self.planner_start_step:
             self.init_planner()

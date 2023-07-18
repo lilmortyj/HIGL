@@ -238,6 +238,9 @@ def run_higl(args):
     man_scale = (high - low) / 2
     absolute_goal_scale = 0
 
+    if args.algo == 'td3':
+        args.absolute_goal = True
+    
     if args.absolute_goal:
         no_xy = False
     else:
@@ -319,6 +322,7 @@ def run_higl(args):
 
     # * higher-level policy
     manager_policy = higl.Manager(
+        algo=args.algo,
         state_dim=state_dim,
         goal_dim=goal_dim,
         action_dim=controller_goal_dim,

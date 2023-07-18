@@ -42,13 +42,18 @@ if __name__ == '__main__':
     if not os.path.exists(root_dir):
         os.makedirs(root_dir)
     file_lists = [
-        '../results/AntMazeT-v0_hiro_2_traindata.csv',
+        # '../results/AntMazeT-v0_hiro_2_traindata.csv',
+        '../results/20230714092309/AntMazeT-v0_higl_2_traindata.csv',
+        '../results/20230714092314/AntMazeT-v0_hrac_2_traindata.csv',
     ]
     key_words = [
         ['h_state_x',
         'h_state_y',],
+        ['h_state_x',
+        'h_state_y',],
     ]
     name_list = [
+        '_h_states',
         '_h_states',
     ]
     for k in range(len(file_lists)):
