@@ -2,7 +2,7 @@ from gym.envs.registration import register
 import gym
 
 robots = ['Point', 'Ant']
-task_types = ['Maze', 'Maze1', 'MazeL', 'MazeT', 'Push', 'Fall', 'Block', 'BlockMaze', 'MazeW']
+task_types = ['Maze', 'Maze1', 'MazeL', 'MazeT', 'Push', 'Fall', 'Block', 'BlockMaze', 'MazeW', 'Reacher']
 all_name = [x + y for x in robots for y in task_types]
 for name_t in all_name:
     for Test in ['', 'Test']:
@@ -13,6 +13,9 @@ for name_t in all_name:
             goal_args = [[-4, -4], [20, 20]]
         if name_t[-5:] == 'MazeT':
             goal_args = [[-4, -6], [20, 6]]
+            max_timestep = 500
+        if name_t[-7:] == 'Reacher':
+            goal_args = [[-9.5, -9.5], [9.5, 9.5]]
             max_timestep = 500
         if Test == 'Test':
             goal_args = [[0.0, 16.0], [1e-3,16 + 1e-3]]

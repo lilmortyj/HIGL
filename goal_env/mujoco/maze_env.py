@@ -88,196 +88,273 @@ class MazeEnv(gym.Env):
             default.find('.//geom').set('solimp', '.995 .995 .01')
 
         self.movable_blocks = []
-        for i in range(len(structure)):
-            for j in range(len(structure[0])):
-                struct = structure[i][j]
-                if struct == 'r' and self._put_spin_near_agent:
-                    struct = maze_env_utils.Move.SpinXY
-                if self.elevated and struct not in [-1]:
-                    # Create elevated platform.
-                    ET.SubElement(
-                        worldbody, "geom",
-                        name="elevated_%d_%d" % (i, j),
-                        pos="%f %f %f" % (j * size_scaling - torso_x,
-                                          i * size_scaling - torso_y,
-                                          height / 2 * size_scaling),
-                        size="%f %f %f" % (0.5 * size_scaling,
-                                           0.5 * size_scaling,
-                                           height / 2 * size_scaling),
-                        type="box",
-                        material="",
-                        contype="1",
-                        conaffinity="1",
-                        rgba="0.9 0.9 0.9 1",
-                    )
-                if struct == 1:    # Unmovable block.
-                    # Offset all coordinates so that robot starts at the origin.
-                    ET.SubElement(
-                        worldbody, "geom",
-                        name="block_%d_%d" % (i, j),
-                        pos="%f %f %f" % (j * size_scaling - torso_x,
-                                          i * size_scaling - torso_y,
-                                          height_offset +
-                                          height / 2 * size_scaling),
-                        size="%f %f %f" % (0.5 * size_scaling,
-                                           0.5 * size_scaling,
-                                           height / 2 * size_scaling),
-                        type="box",
-                        material="",
-                        contype="1",
-                        conaffinity="1",
-                        rgba="0.4 0.4 0.4 1",
-                    )
-                elif struct == 2:  # * T block.
-                    ET.SubElement(
-                        worldbody, "geom",
-                        name="t_block_%d_%d_1" % (i, j),
-                        pos="%f %f %f" % (j * size_scaling - 5/16 * size_scaling - torso_x,
+        if self._maze_id == 'Reacher':
+            # add the following lines to the 'worldbody' label of the xml file
+            '''
+            <body name="east_wall" pos="12 0 0.4">
+                <geom type="box" size="0.25 12 0.4" contype="1" conaffinity="1" rgba="0.4 0.4 0.4 1" />
+            </body>
+            <body name="north_wall" pos="0 12 0.4">
+                <geom type="box" size="12.25 0.25 0.4" contype="1" conaffinity="1" rgba="0.4 0.4 0.4 1" />
+            </body>
+                <body name="west_wall" pos="-12 0 0.4">
+            <geom type="box" size="0.25 12 0.4" contype="1" conaffinity="1" rgba="0.4 0.4 0.4 1" />
+                </body>
+            <body name="south_wall" pos="0 -12 0.4">
+                <geom type="box" size="12.25 0.25 0.4" contype="1" conaffinity="1" rgba="0.4 0.4 0.4 1" />
+            </body>
+            '''
+            # east_wall
+            ET.SubElement(
+                worldbody, "body",
+                name="east_wall",
+                pos="12 0 0.4",
+            )
+            body = worldbody.find(".//body[@name='east_wall']")
+            ET.SubElement(
+                body, "geom",
+                type="box",
+                size="0.25 12 0.4",
+                contype="1",
+                conaffinity="1",
+                rgba="0.4 0.4 0.4 1",
+            )
+            # north_wall
+            ET.SubElement(
+                worldbody, "body",
+                name="north_wall",
+                pos="0 12 0.4",
+            )
+            body = worldbody.find(".//body[@name='north_wall']")
+            ET.SubElement(
+                body, "geom",
+                type="box",
+                size="12.25 0.25 0.4",
+                contype="1",
+                conaffinity="1",
+                rgba="0.4 0.4 0.4 1",
+            )
+            # west_wall
+            ET.SubElement(
+                worldbody, "body",
+                name="west_wall",
+                pos="-12 0 0.4",
+            )
+            body = worldbody.find(".//body[@name='west_wall']")
+            ET.SubElement(
+                body, "geom",
+                type="box",
+                size="0.25 12 0.4",
+                contype="1",
+                conaffinity="1",
+                rgba="0.4 0.4 0.4 1",
+            )
+            # south_wall
+            ET.SubElement(
+                worldbody, "body",
+                name="south_wall",
+                pos="0 -12 0.4",
+            )
+            body = worldbody.find(".//body[@name='south_wall']")
+            ET.SubElement(
+                body, "geom",
+                type="box",
+                size="12.25 0.25 0.4",
+                contype="1",
+                conaffinity="1",
+                rgba="0.4 0.4 0.4 1",
+            )
+        else:
+            for i in range(len(structure)):
+                for j in range(len(structure[0])):
+                    struct = structure[i][j]
+                    if struct == 'r' and self._put_spin_near_agent:
+                        struct = maze_env_utils.Move.SpinXY
+                    if self.elevated and struct not in [-1]:
+                        # Create elevated platform.
+                        ET.SubElement(
+                            worldbody, "geom",
+                            name="elevated_%d_%d" % (i, j),
+                            pos="%f %f %f" % (j * size_scaling - torso_x,
+                                            i * size_scaling - torso_y,
+                                            height / 2 * size_scaling),
+                            size="%f %f %f" % (0.5 * size_scaling,
+                                            0.5 * size_scaling,
+                                            height / 2 * size_scaling),
+                            type="box",
+                            material="",
+                            contype="1",
+                            conaffinity="1",
+                            rgba="0.9 0.9 0.9 1",
+                        )
+                    if struct == 1:    # Unmovable block.
+                        # Offset all coordinates so that robot starts at the origin.
+                        ET.SubElement(
+                            worldbody, "geom",
+                            name="block_%d_%d" % (i, j),
+                            pos="%f %f %f" % (j * size_scaling - torso_x,
                                             i * size_scaling - torso_y,
                                             height_offset +
-                                            height / 2 * size_scaling),  # * 2 if not elevated else 6
-                        size="%f %f %f" % (9/8 * 0.5 * size_scaling,
-                                            1/32 * 0.5 * size_scaling,
-                                            height / 2 * size_scaling),  # * 2 -> 4
-                        type="box",
-                        material="",
-                        contype="1",
-                        conaffinity="1",
-                        rgba="0.5 0.5 0.5 1",
-                    )
-                    ET.SubElement(
-                        worldbody, "geom",
-                        name="t_block_%d_%d_2" % (i, j),
-                        pos="%f %f %f" % (j * size_scaling + 3/8 * size_scaling - torso_x,
-                                            i * size_scaling - torso_y,
+                                            height / 2 * size_scaling),
+                            size="%f %f %f" % (0.5 * size_scaling,
+                                            0.5 * size_scaling,
+                                            height / 2 * size_scaling),
+                            type="box",
+                            material="",
+                            contype="1",
+                            conaffinity="1",
+                            rgba="0.4 0.4 0.4 1",
+                        )
+                    elif struct == 2:  # * T block.
+                        ET.SubElement(
+                            worldbody, "geom",
+                            name="t_block_%d_%d_1" % (i, j),
+                            pos="%f %f %f" % (j * size_scaling - 5/16 * size_scaling - torso_x,
+                                                i * size_scaling - torso_y,
+                                                height_offset +
+                                                height / 2 * size_scaling),  # * 2 if not elevated else 6
+                            size="%f %f %f" % (9/8 * 0.5 * size_scaling,
+                                                1/32 * 0.5 * size_scaling,
+                                                height / 2 * size_scaling),  # * 2 -> 4
+                            type="box",
+                            material="",
+                            contype="1",
+                            conaffinity="1",
+                            rgba="0.5 0.5 0.5 1",
+                        )
+                        ET.SubElement(
+                            worldbody, "geom",
+                            name="t_block_%d_%d_2" % (i, j),
+                            pos="%f %f %f" % (j * size_scaling + 3/8 * size_scaling - torso_x,
+                                                i * size_scaling - torso_y,
+                                                height_offset +
+                                                height / 2 * size_scaling),  # * 2 if not elevated else 6
+                            size="%f %f %f" % (1/4 * 0.5 * size_scaling,
+                                                7/16 * 0.5 * size_scaling,
+                                                height / 2 * size_scaling),  # * 2 -> 4
+                            type="box",
+                            material="",
+                            contype="1",
+                            conaffinity="1",
+                            rgba="0.5 0.5 0.5 1",
+                        )
+                    elif struct == 3:  # * Down Walls
+                        ET.SubElement(
+                            worldbody, "geom",
+                            name="block_%d_%d" % (i, j),
+                            pos="%f %f %f" % (j * size_scaling - torso_x,
+                                                i * size_scaling - torso_y - 1/8 * size_scaling,
+                                                height_offset +
+                                                height / 2 * size_scaling),  # * 2 if not elevated else 6
+                            size="%f %f %f" % (0.5 * size_scaling,
+                                                3/4 * 0.5 * size_scaling,
+                                                height / 2 * size_scaling),  # * 2 -> 4
+                            type="box",
+                            material="",
+                            contype="1",
+                            conaffinity="1",
+                            rgba="0.4 0.4 0.4 1",
+                        )
+                    elif struct == 4:  # * Up Walls
+                        ET.SubElement(
+                            worldbody, "geom",
+                            name="block_%d_%d" % (i, j),
+                            pos="%f %f %f" % (j * size_scaling - torso_x,
+                                                i * size_scaling - torso_y + 1/8 * size_scaling,
+                                                height_offset +
+                                                height / 2 * size_scaling),  # * 2 if not elevated else 6
+                            size="%f %f %f" % (0.5 * size_scaling,
+                                                3/4 * 0.5 * size_scaling,
+                                                height / 2 * size_scaling),  # * 2 -> 4
+                            type="box",
+                            material="",
+                            contype="1",
+                            conaffinity="1",
+                            rgba="0.4 0.4 0.4 1",
+                        )
+                    elif maze_env_utils.can_move(struct):    # Movable block.
+                        # The "falling" blocks are shrunk slightly and increased in mass to
+                        # ensure that it can fall easily through a gap in the platform blocks.
+                        name = "movable_%d_%d" % (i, j)
+                        self.movable_blocks.append((name, struct))
+                        falling = maze_env_utils.can_move_z(struct)
+                        spinning = maze_env_utils.can_spin(struct)
+                        x_offset = 0.25 * size_scaling if spinning else 0.0
+                        y_offset = 0.0
+                        shrink = 0.1 if spinning else 0.99 if falling else 1.0
+                        height_shrink = 0.1 if spinning else 1.0
+                        movable_body = ET.SubElement(
+                            worldbody, "body",
+                            name=name,
+                            pos="%f %f %f" % (j * size_scaling - torso_x + x_offset,
+                                            i * size_scaling - torso_y + y_offset,
                                             height_offset +
-                                            height / 2 * size_scaling),  # * 2 if not elevated else 6
-                        size="%f %f %f" % (1/4 * 0.5 * size_scaling,
-                                            7/16 * 0.5 * size_scaling,
-                                            height / 2 * size_scaling),  # * 2 -> 4
-                        type="box",
-                        material="",
-                        contype="1",
-                        conaffinity="1",
-                        rgba="0.5 0.5 0.5 1",
-                    )
-                elif struct == 3:  # * Down Walls
-                    ET.SubElement(
-                        worldbody, "geom",
-                        name="block_%d_%d" % (i, j),
-                        pos="%f %f %f" % (j * size_scaling - torso_x,
-                                            i * size_scaling - torso_y - 1/8 * size_scaling,
-                                            height_offset +
-                                            height / 2 * size_scaling),  # * 2 if not elevated else 6
-                        size="%f %f %f" % (0.5 * size_scaling,
-                                            3/4 * 0.5 * size_scaling,
-                                            height / 2 * size_scaling),  # * 2 -> 4
-                        type="box",
-                        material="",
-                        contype="1",
-                        conaffinity="1",
-                        rgba="0.4 0.4 0.4 1",
-                    )
-                elif struct == 4:  # * Up Walls
-                    ET.SubElement(
-                        worldbody, "geom",
-                        name="block_%d_%d" % (i, j),
-                        pos="%f %f %f" % (j * size_scaling - torso_x,
-                                            i * size_scaling - torso_y + 1/8 * size_scaling,
-                                            height_offset +
-                                            height / 2 * size_scaling),  # * 2 if not elevated else 6
-                        size="%f %f %f" % (0.5 * size_scaling,
-                                            3/4 * 0.5 * size_scaling,
-                                            height / 2 * size_scaling),  # * 2 -> 4
-                        type="box",
-                        material="",
-                        contype="1",
-                        conaffinity="1",
-                        rgba="0.4 0.4 0.4 1",
-                    )
-                elif maze_env_utils.can_move(struct):    # Movable block.
-                    # The "falling" blocks are shrunk slightly and increased in mass to
-                    # ensure that it can fall easily through a gap in the platform blocks.
-                    name = "movable_%d_%d" % (i, j)
-                    self.movable_blocks.append((name, struct))
-                    falling = maze_env_utils.can_move_z(struct)
-                    spinning = maze_env_utils.can_spin(struct)
-                    x_offset = 0.25 * size_scaling if spinning else 0.0
-                    y_offset = 0.0
-                    shrink = 0.1 if spinning else 0.99 if falling else 1.0
-                    height_shrink = 0.1 if spinning else 1.0
-                    movable_body = ET.SubElement(
-                        worldbody, "body",
-                        name=name,
-                        pos="%f %f %f" % (j * size_scaling - torso_x + x_offset,
-                                          i * size_scaling - torso_y + y_offset,
-                                          height_offset +
-                                          height / 2 * size_scaling * height_shrink),
-                    )
-                    ET.SubElement(
-                        movable_body, "geom",
-                        name="block_%d_%d" % (i, j),
-                        pos="0 0 0",
-                        size="%f %f %f" % (0.5 * size_scaling * shrink,
-                                           0.5 * size_scaling * shrink,
-                                           height / 2 * size_scaling * height_shrink),
-                        type="box",
-                        material="",
-                        mass="0.001" if falling else "0.0002",
-                        contype="1",
-                        conaffinity="1",
-                        rgba="0.9 0.1 0.1 1"
-                    )
-                    if maze_env_utils.can_move_x(struct):
-                        ET.SubElement(
-                            movable_body, "joint",
-                            armature="0",
-                            axis="1 0 0",
-                            damping="0.0",
-                            limited="true" if falling else "false",
-                            range="%f %f" % (-size_scaling, size_scaling),
-                            margin="0.01",
-                            name="movable_x_%d_%d" % (i, j),
-                            pos="0 0 0",
-                            type="slide"
+                                            height / 2 * size_scaling * height_shrink),
                         )
-                    if maze_env_utils.can_move_y(struct):
                         ET.SubElement(
-                            movable_body, "joint",
-                            armature="0",
-                            axis="0 1 0",
-                            damping="0.0",
-                            limited="true" if falling else "false",
-                            range="%f %f" % (-size_scaling, size_scaling),
-                            margin="0.01",
-                            name="movable_y_%d_%d" % (i, j),
+                            movable_body, "geom",
+                            name="block_%d_%d" % (i, j),
                             pos="0 0 0",
-                            type="slide"
+                            size="%f %f %f" % (0.5 * size_scaling * shrink,
+                                            0.5 * size_scaling * shrink,
+                                            height / 2 * size_scaling * height_shrink),
+                            type="box",
+                            material="",
+                            mass="0.001" if falling else "0.0002",
+                            contype="1",
+                            conaffinity="1",
+                            rgba="0.9 0.1 0.1 1"
                         )
-                    if maze_env_utils.can_move_z(struct):
-                        ET.SubElement(
-                            movable_body, "joint",
-                            armature="0",
-                            axis="0 0 1",
-                            damping="0.0",
-                            limited="true",
-                            range="%f 0" % (-height_offset),
-                            margin="0.01",
-                            name="movable_z_%d_%d" % (i, j),
-                            pos="0 0 0",
-                            type="slide"
-                        )
-                    if maze_env_utils.can_spin(struct):
-                        ET.SubElement(
-                            movable_body, "joint",
-                            armature="0",
-                            axis="0 0 1",
-                            damping="0.0",
-                            limited="false",
-                            name="spinable_%d_%d" % (i, j),
-                            pos="0 0 0",
-                            type="ball"
-                        )
+                        if maze_env_utils.can_move_x(struct):
+                            ET.SubElement(
+                                movable_body, "joint",
+                                armature="0",
+                                axis="1 0 0",
+                                damping="0.0",
+                                limited="true" if falling else "false",
+                                range="%f %f" % (-size_scaling, size_scaling),
+                                margin="0.01",
+                                name="movable_x_%d_%d" % (i, j),
+                                pos="0 0 0",
+                                type="slide"
+                            )
+                        if maze_env_utils.can_move_y(struct):
+                            ET.SubElement(
+                                movable_body, "joint",
+                                armature="0",
+                                axis="0 1 0",
+                                damping="0.0",
+                                limited="true" if falling else "false",
+                                range="%f %f" % (-size_scaling, size_scaling),
+                                margin="0.01",
+                                name="movable_y_%d_%d" % (i, j),
+                                pos="0 0 0",
+                                type="slide"
+                            )
+                        if maze_env_utils.can_move_z(struct):
+                            ET.SubElement(
+                                movable_body, "joint",
+                                armature="0",
+                                axis="0 0 1",
+                                damping="0.0",
+                                limited="true",
+                                range="%f 0" % (-height_offset),
+                                margin="0.01",
+                                name="movable_z_%d_%d" % (i, j),
+                                pos="0 0 0",
+                                type="slide"
+                            )
+                        if maze_env_utils.can_spin(struct):
+                            ET.SubElement(
+                                movable_body, "joint",
+                                armature="0",
+                                axis="0 0 1",
+                                damping="0.0",
+                                limited="false",
+                                name="spinable_%d_%d" % (i, j),
+                                pos="0 0 0",
+                                type="ball"
+                            )
 
         torso = tree.find(".//body[@name='torso']")
         geoms = torso.findall(".//geom")

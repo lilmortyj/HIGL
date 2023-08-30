@@ -65,6 +65,9 @@ def evaluate_policy(env,
                     if env_name == "AntMazeT-v0":
                         x_lower, y_lower = -3.5, -5.5
                         x_higher, y_higher = 19.5, 5.5
+                    elif env_name == "AntReacher-v0":
+                        x_lower, y_lower = -11.5, -11.5
+                        x_higher, y_higher = 11.5, 11.5
                     elif "AntMaze" in env_name:
                         x_lower, y_lower = -3.5, -3.5
                         x_higher, y_higher = 19.5, 19.5
@@ -118,7 +121,7 @@ def evaluate_policy(env,
                     # else:
                     #     sns.heatmap(Qs, vmax=0, vmin=-1500)
                     # sns.heatmap(state_points_qvalue,cmap="rocket",robust=True)
-                    plt.title("AntMazeT Subgoal: %d Qg: %.2f Qg': %.2f Step: %d Total Step: %d"%(step_count // manager_propose_frequency, ture_subgoal_qvalue, subgoal_new_qvalue, step_count % manager_propose_frequency, step_count), fontsize=20)
+                    plt.title("%s Subgoal: %d Qg: %.2f Qg': %.2f Step: %d Total Step: %d"%(env_name, step_count // manager_propose_frequency, ture_subgoal_qvalue, subgoal_new_qvalue, step_count % manager_propose_frequency, step_count), fontsize=20)
                     plt.axis("off")
                     # print("state_points_qvalue: ", state_points_qvalue)
                     # print("heatmap_path: ", heatmap_path)

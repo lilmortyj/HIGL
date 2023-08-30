@@ -116,6 +116,14 @@ def construct_maze(maze_id='Maze'):
             [1, O, O, O, O, O, O, O, O, 1],
             [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
         ]
+    elif maze_id == 'Reacher':
+        structure = [
+            [1, 1, 1, 1, 1],
+            [1, 0, 0, 0, 1],
+            [1, 0, 'r', 0, 1],
+            [1, 0, 0, 0, 1],
+            [1, 1, 1, 1, 1],
+        ]
     else:
         raise NotImplementedError('The provided MazeId %s is not recognized' % maze_id)
 
