@@ -43,21 +43,16 @@ if __name__ == '__main__':
         os.makedirs(root_dir)
     file_lists = [
         # '../results/AntMazeT-v0_hiro_2_traindata.csv',
-        '../results/20230714092309/AntMazeT-v0_higl_2_traindata.csv',
-        '../results/20230714092314/AntMazeT-v0_hrac_2_traindata.csv',
+        # '../results/20230714092309/AntMazeT-v0_higl_2_traindata.csv',
+        # '../results/20230714092314/AntMazeT-v0_hrac_2_traindata.csv',
+        '../results/20230718031211/AntMazeT-v0_td3_2_traindata.csv',
     ]
     key_words = [
-        ['h_state_x',
-        'h_state_y',],
-        ['h_state_x',
-        'h_state_y',],
-    ]
-    name_list = [
-        '_h_states',
-        '_h_states',
+        'h_state_x',
+        'h_state_y',
     ]
     for k in range(len(file_lists)):
         name_ = file_lists[k].split('/')[-1].split('.')[0]
-        name = root_dir + name_ + name_list[k]
-        data = load_file(file_lists[k], key_words[k])
+        name = root_dir + name_ + '_h_states'
+        data = load_file(file_lists[k], key_words)
         plot_heatmap(data, name=name)
