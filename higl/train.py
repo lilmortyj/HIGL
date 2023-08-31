@@ -207,10 +207,14 @@ def run_higl(args):
 
     if "Ant" in args.env_name:
         step_style = args.reward_shaping == 'sparse'
+        if args.algo == 'td3':
+            args.fix_starting_point = False
+            args.adj_R = 3.0
         env = EnvWithGoal(gym.make(args.env_name,
                                    stochastic_xy=args.stochastic_xy,
-                                   stochastic_sigma=args.stochastic_sigma),
-                          env_name=args.env_name, step_style=step_style)
+                                   stochastic_sigma=args.stochastic_sigma,
+                                   fix_starting_point=args.fix_starting_point,),
+                          env_name=args.env_name, step_style=step_style, adj_R=args.adj_R)
     elif "Point" in args.env_name:
         assert not args.stochastic_xy
         step_style = args.reward_shaping == 'sparse'
@@ -232,7 +236,7 @@ def run_higl(args):
     elif args.env_name in ["Pusher-v0"]:
         high = np.array([2., 2., 2., 2., 2., 2.])
         low = - high
-    elif "AntMaze" in args.env_name or "PointMaze" in args.env_name:
+    elif "AntMaze" in args.env_name or "PointMaze" in args.env_name or "AntReacher" in args.env_name:
         high = np.array((10., 10.))
         low = - high
     else:
@@ -581,6 +585,9 @@ def run_higl(args):
             goal = obs["desired_goal"]
             achieved_goal = obs["achieved_goal"]
             state = obs["observation"]
+            print(f"-------------- episode_num {episode_num} --------------")
+            print("state: ", achieved_goal)
+            print("goal: ", goal)
 
             ep_obs_seq = [state]  # For Novelty PQ
             ep_ac_seq = [achieved_goal]

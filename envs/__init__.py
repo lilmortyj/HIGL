@@ -144,7 +144,7 @@ class GatherEnv(object):
 class EnvWithGoal(object):
 
     def __init__(self, base_env, env_name, fix_goal=False, manual_goals=None, step_style=False,
-                 stochastic_xy=False, stochastic_sigma=0.):
+                 stochastic_xy=False, stochastic_sigma=0., adj_R=-1.):
         if env_name in ['AntMaze-v1', "PointMaze-v0", "AntMazeSparse", "AntMazeW-v2",
                         "PointMaze-v1", "AntMaze-v0", "AntMazeT-v0", "AntReacher-v0"]:
             self.goal_dim = 2
@@ -168,6 +168,7 @@ class EnvWithGoal(object):
 
         self.stochastic_xy = stochastic_xy
         self.stochastic_sigma = stochastic_sigma
+        self.adj_R = adj_R if adj_R > 0 else None
 
     def seed(self, seed):
         self.base_env.seed(seed)
@@ -179,6 +180,11 @@ class EnvWithGoal(object):
         obs = self.base_env.reset()
         self.count = 0
         self.goal = self.goal_sample_fn()
+        if self.adj_R != None:
+            cur_xy = obs[:self.goal_dim]
+            # re-sample goal until it is less than adj_R from cur_xy
+            while np.linalg.norm(cur_xy - self.goal) > self.adj_R:
+                self.goal = self.goal_sample_fn()
         if self.evaluate:
             if len(self.goal.shape) != 1:
                 self.goal = self.goal[self.task_id]

@@ -54,3 +54,8 @@ Also, to run the MuJoCo experiments, a license is required (see [here](https://w
 CUDA_VISIBLE_DEVICES=0 ./scripts/hiro_ant_maze_t.sh 0 2
 CUDA_VISIBLE_DEVICES=0 ./scripts/hiro_ant_maze_t_eval.sh 0 2
 ```
+
+- Ant Reacher
+```
+CUDA_VISIBLE_DEVICES=0 ./scripts/td3_ant_reacher.sh 0 2
+```

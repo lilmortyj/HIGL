@@ -124,7 +124,7 @@ def create_maze_env(env_name=None, top_down_view=False, maze_size_scaling=8, ran
         'maze_size_scaling': maze_size_scaling,
         'stochastic_xy': stochastic_xy,
         'stochastic_sigma': stochastic_sigma,
-        # 'fix_starting_point': fix_starting_point,
+        'fix_starting_point': fix_starting_point,
         # 'init_by_seed': init_by_seed,
     }
     gym_env = cls(**gym_mujoco_kwargs)

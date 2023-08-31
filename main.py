@@ -14,6 +14,8 @@ parser.add_argument("--algo", default="higl", type=str, choices=["higl", "hrac",
 parser.add_argument("--seed", default=2, type=int)
 parser.add_argument("--eval_freq", default=5e3, type=float)
 parser.add_argument("--max_timesteps", default=5e6, type=float)
+parser.add_argument("--fix_starting_point", default=True, type=bool)
+parser.add_argument("--adj_R", default=-1., type=float)
 
 # Off-policy correction (from HIRO)
 parser.add_argument("--no_correction", action="store_true")

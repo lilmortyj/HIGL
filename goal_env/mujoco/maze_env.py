@@ -367,6 +367,7 @@ class MazeEnv(gym.Env):
         tree.write(file_path)
 
         self.wrapped_env = model_cls(*args, file_path=file_path, **kwargs)
+        self.fix_starting_point = kwargs.get('fix_starting_point', True)
         self.GOAL = goal
         if self.GOAL is not None:
             self.GOAL = self.unwrapped._rowcol_to_xy(*self.GOAL)
@@ -584,6 +585,12 @@ class MazeEnv(gym.Env):
             # xy = self._init_positions[self.np_random.randint(len(self._init_positions))]
             xy = self._init_positions[np.random.randint(len(self._init_positions))]
             self.wrapped_env.set_xy(xy)
+        if not self.fix_starting_point:
+            if self._maze_id == 'Reacher':
+                xy = np.random.uniform(-9.5, 9.5, 2)
+                self.wrapped_env.set_xy(xy)
+            else:
+                raise NotImplementedError
         return self._get_obs()
 
     @property
