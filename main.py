@@ -108,6 +108,7 @@ parser.add_argument("--load_adj_net", default=False, action="store_true")
 # Evaluation
 parser.add_argument("--evaluate", action="store_true")
 parser.add_argument("--h_v_heatmap", action="store_true")
+parser.add_argument("--visualize", action="store_true")
 
 parser.add_argument("--version", type=str, default='v0')
 

@@ -218,7 +218,7 @@ class EnvWithGoal(object):
         return next_obs, reward, done or self.count >= 500, info
 
     def render(self, mode='rgb_array'):
-        self.base_env.render(mode=mode)
+        return self.base_env.render(mode=mode)
 
     def get_image(self):
         self.render()

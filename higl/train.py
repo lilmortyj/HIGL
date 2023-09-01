@@ -1,5 +1,6 @@
 import datetime
 import itertools
+import cv2
 from matplotlib import pyplot as plt
 import seaborn as sns
 import torch
@@ -24,6 +25,15 @@ from envs import EnvWithGoal
 
 TIMESTAMP = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
 
+def display_video(imgs, eval_idx, eval_ep, dir, size):
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    video_writer = cv2.VideoWriter(dir + f"/{eval_idx}_{eval_ep}.mp4", fourcc, 10.0, size)
+    for i in imgs:
+        I = cv2.cvtColor(i, cv2.COLOR_RGB2BGR)
+        I = cv2.resize(I, size)
+        video_writer.write(I)
+    print("Video" + dir + f"/{eval_idx}_{eval_ep}.mp4 writen down")
+
 def evaluate_policy(env,
                     args,
                     env_name,
@@ -37,6 +47,10 @@ def evaluate_policy(env,
                     ):
     print("Starting evaluation number {}...".format(eval_idx))
     env.evaluate = True
+    if args.visualize:
+        save_dir = os.path.join(args.load_dir, "videos")
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
 
     with torch.no_grad():
         avg_reward = 0.
@@ -45,6 +59,9 @@ def evaluate_policy(env,
         goals_achieved = 0
         for eval_ep in range(eval_episodes):
             obs = env.reset()
+            if args.visualize:
+                imgs = []
+                imgs.append(env.render())
 
             goal = obs["desired_goal"]
             achieved_goal = obs["achieved_goal"]
@@ -129,6 +146,8 @@ def evaluate_policy(env,
                     plt.close()
                 action = controller_policy.select_action(state, subgoal)
                 new_obs, reward, done, info = env.step(action)
+                if args.visualize:
+                    imgs.append(env.render())
                 is_success = info['is_success']
                 if is_success:  # * none early stop when training while early stop when evaluating
                     env_goals_achieved += 1
@@ -148,6 +167,8 @@ def evaluate_policy(env,
                                                                   ctrl_rew_scale, action)
                 state = new_state
                 achieved_goal = new_achieved_goal
+            if args.visualize:
+                display_video(imgs, eval_idx, eval_ep, dir=save_dir, size=(2000,2000))
 
         avg_reward /= eval_episodes
         avg_controller_rew /= global_steps
@@ -187,18 +208,19 @@ def run_higl(args):
         os.makedirs("./results")
     if args.save_models and not os.path.exists(args.save_dir):
         os.makedirs(args.save_dir)
-    save_dir_timestamp = os.path.join(args.save_dir, TIMESTAMP)
-    if not os.path.exists(save_dir_timestamp):
-        os.makedirs(save_dir_timestamp)
-    result_dir_timestamp = os.path.join("./results", TIMESTAMP)
-    if not os.path.exists(result_dir_timestamp):
-        os.makedirs(result_dir_timestamp)
+        save_dir_timestamp = os.path.join(args.save_dir, TIMESTAMP)
+        if not os.path.exists(save_dir_timestamp):
+            os.makedirs(save_dir_timestamp)
+    if not args.evaluate:
+        result_dir_timestamp = os.path.join("./results", TIMESTAMP)
+        if not os.path.exists(result_dir_timestamp):
+            os.makedirs(result_dir_timestamp)
     if not os.path.exists(args.log_dir):
         os.makedirs(args.log_dir)
-    if not os.path.exists(os.path.join(args.log_dir, args.algo)):
-        os.makedirs(os.path.join(args.log_dir, args.algo))
-    output_dir = os.path.join(args.log_dir, args.algo)
-    print("Logging in {}".format(output_dir))
+    # if not os.path.exists(os.path.join(args.log_dir, args.algo)):
+    #     os.makedirs(os.path.join(args.log_dir, args.algo))
+    # output_dir = os.path.join(args.log_dir, args.algo)
+    # print("Logging in {}".format(output_dir))
 
     if args.save_models:
         import pickle
@@ -714,7 +736,7 @@ def run_higl(args):
                 'achieved_goal_seq': [achieved_goal]
             })
 
-    eval_episodes = 1 if args.evaluate else 5
+    eval_episodes = 3 if args.evaluate else 5
     
     for task_id in range(num_eval_task):
         env.task_id = task_id
