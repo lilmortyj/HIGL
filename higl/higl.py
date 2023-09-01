@@ -140,12 +140,22 @@ class Manager(object):
 
         if to_numpy:
             if self.algo == 'td3':
-                return goal.cpu().data.numpy().squeeze()
+                if self.absolute_goal:
+                    return goal.cpu().data.numpy().squeeze()
+                else:
+                    goal_dim = goal.shape[-1]
+                    relative_goal = goal - state[..., :goal_dim]
+                    return relative_goal.cpu().data.numpy().squeeze()
             else:
                 return self.actor(state, goal).cpu().data.numpy().squeeze()
         else:
             if self.algo == 'td3':
-                return goal.squeeze()
+                if self.absolute_goal:
+                    return goal.squeeze()
+                else:
+                    goal_dim = goal.shape[-1]
+                    relative_goal = goal - state[..., :goal_dim]
+                    return relative_goal.squeeze()
             else:
                 return self.actor(state, goal).squeeze()
 

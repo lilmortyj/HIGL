@@ -206,8 +206,9 @@ def evaluate_policy(env,
 def run_higl(args):
     if not os.path.exists("./results"):
         os.makedirs("./results")
-    if args.save_models and not os.path.exists(args.save_dir):
-        os.makedirs(args.save_dir)
+    if args.save_models:
+        if not os.path.exists(args.save_dir):
+            os.makedirs(args.save_dir)
         save_dir_timestamp = os.path.join(args.save_dir, TIMESTAMP)
         if not os.path.exists(save_dir_timestamp):
             os.makedirs(save_dir_timestamp)
@@ -268,7 +269,7 @@ def run_higl(args):
     absolute_goal_scale = 0
 
     if args.algo == 'td3':
-        args.absolute_goal = True
+        args.absolute_goal = False
     
     if args.absolute_goal:
         no_xy = False
@@ -607,9 +608,9 @@ def run_higl(args):
             goal = obs["desired_goal"]
             achieved_goal = obs["achieved_goal"]
             state = obs["observation"]
-            print(f"-------------- episode_num {episode_num} --------------")
-            print("state: ", achieved_goal)
-            print("goal: ", goal)
+            # print(f"-------------- episode_num {episode_num} --------------")
+            # print("state: ", achieved_goal)
+            # print("goal: ", goal)
 
             ep_obs_seq = [state]  # For Novelty PQ
             ep_ac_seq = [achieved_goal]
