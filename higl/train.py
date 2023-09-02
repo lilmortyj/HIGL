@@ -1,4 +1,3 @@
-import datetime
 import itertools
 import cv2
 from matplotlib import pyplot as plt
@@ -23,7 +22,6 @@ from goal_env.mujoco import *
 
 from envs import EnvWithGoal
 
-TIMESTAMP = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
 
 def display_video(imgs, eval_idx, eval_ep, dir, size):
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
@@ -99,7 +97,7 @@ def evaluate_policy(env,
                     initial_list = list(itertools.product(x_length, y_length))
                     subgoal_points = np.array(initial_list).reshape(-1,2)
                     
-                    heatmap_path = os.path.join(os.path.join('./pics', TIMESTAMP), f"h_value_{env.task_id}")
+                    heatmap_path = os.path.join(os.path.join('./pics', args.TIMESTAMP), f"h_value_{env.task_id}")
                     if not os.path.exists(heatmap_path):
                         os.makedirs(heatmap_path)
                     subgoal_new = manager_policy.sample_goal(state, goal)
@@ -211,11 +209,11 @@ def run_higl(args):
     if args.save_models:
         if not os.path.exists(args.save_dir):
             os.makedirs(args.save_dir)
-        save_dir_timestamp = os.path.join(args.save_dir, TIMESTAMP)
+        save_dir_timestamp = os.path.join(args.save_dir, args.TIMESTAMP)
         if not os.path.exists(save_dir_timestamp):
             os.makedirs(save_dir_timestamp)
     if not args.evaluate:
-        result_dir_timestamp = os.path.join("./results", TIMESTAMP)
+        result_dir_timestamp = os.path.join("./results", args.TIMESTAMP)
         if not os.path.exists(result_dir_timestamp):
             os.makedirs(result_dir_timestamp)
     if not os.path.exists(args.log_dir):
@@ -294,7 +292,7 @@ def run_higl(args):
 
     controller_goal_dim = obs["achieved_goal"].shape[0]
 
-    tb_path = "{}/{}/{}/{}/{}".format(args.env_name, args.algo, args.version, args.seed, TIMESTAMP)
+    tb_path = "{}/{}/{}/{}/{}".format(args.env_name, args.algo, args.version, args.seed, args.TIMESTAMP)
     writer = SummaryWriter(log_dir=os.path.join(args.log_dir, tb_path))
 
     # Write Hyperparameters to file
@@ -422,7 +420,7 @@ def run_higl(args):
     if args.load:
         try:
             if args.algo == "hrac-ft":
-                controller_policy.load(args.load_dir, args.env_name, "td3", args.version, args.seed)
+                controller_policy.load(args.load_dir, args.env_name, "td3", args.version, 2)
             else:
                 manager_policy.load(args.load_dir, args.env_name, args.load_algo, args.version, args.seed)
                 controller_policy.load(args.load_dir, args.env_name, args.load_algo, args.version, args.seed)
@@ -542,13 +540,13 @@ def run_higl(args):
                         writer.add_scalar(f"eval{task_id}/avg_ep_rew", avg_ep_rew, total_timesteps)
                         writer.add_scalar(f"eval{task_id}/avg_controller_rew", avg_controller_rew, total_timesteps)
 
-                        if "Maze" in args.env_name or args.env_name in ["Reacher3D-v0", "Pusher-v0"]:
+                        if "Maze" in args.env_name or "AntReacher" in args.env_name or args.env_name in ["Reacher3D-v0", "Pusher-v0"]:
                             writer.add_scalar(f"eval{task_id}/avg_steps_to_finish", avg_steps, total_timesteps)
                             writer.add_scalar(f"eval{task_id}/perc_env_goal_achieved", avg_env_finish, total_timesteps)
 
                         evaluations.append([avg_ep_rew, avg_controller_rew, avg_steps])
                         output_data[f"frames{task_id}"].append(total_timesteps)
-                        if "Maze" in args.env_name or args.env_name in ["Reacher3D-v0", "Pusher-v0"]:
+                        if "Maze" in args.env_name or "AntReacher" in args.env_name or args.env_name in ["Reacher3D-v0", "Pusher-v0"]:
                             output_data[f"reward{task_id}"].append(avg_env_finish)
                         else:
                             output_data[f"reward{task_id}"].append(avg_ep_rew)
@@ -559,8 +557,8 @@ def run_higl(args):
                         manager_policy.save(save_dir_timestamp, args.env_name, args.algo, args.version, args.seed)
 
                     if args.save_replay_buffer is not None:
-                        manager_buffer.save(args.save_replay_buffer + f"_{TIMESTAMP}_manager")
-                        controller_buffer.save(args.save_replay_buffer + f"_{TIMESTAMP}_manager")
+                        manager_buffer.save(args.save_replay_buffer + f"_{args.TIMESTAMP}_manager")
+                        controller_buffer.save(args.save_replay_buffer + f"_{args.TIMESTAMP}_manager")
 
                 # Train adjacency network
                 if args.algo in ["higl", "hrac"]:
@@ -764,13 +762,13 @@ def run_higl(args):
         writer.add_scalar(f"eval{task_id}/avg_ep_rew", avg_ep_rew, total_timesteps)
         writer.add_scalar(f"eval{task_id}/avg_controller_rew", avg_controller_rew, total_timesteps)
 
-        if "Maze" in args.env_name or args.env_name in ["Reacher3D-v0", "Pusher-v0"]:
+        if "Maze" in args.env_name or "AntReacher" in args.env_name or args.env_name in ["Reacher3D-v0", "Pusher-v0"]:
             writer.add_scalar(f"eval{task_id}/avg_steps_to_finish", avg_steps, total_timesteps)
             writer.add_scalar(f"eval{task_id}/perc_env_goal_achieved", avg_env_finish, total_timesteps)
 
         evaluations.append([avg_ep_rew, avg_controller_rew, avg_steps])
         output_data[f"frames{task_id}"].append(total_timesteps)
-        if "Maze" in args.env_name or args.env_name in ["Reacher3D-v0", "Pusher-v0"]:
+        if "Maze" in args.env_name or "AntReacher" in args.env_name or args.env_name in ["Reacher3D-v0", "Pusher-v0"]:
             output_data[f"reward{task_id}"].append(avg_env_finish)
         else:
             output_data[f"reward{task_id}"].append(avg_ep_rew)
