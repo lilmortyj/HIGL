@@ -21,8 +21,12 @@ if __name__ == "__main__":
     # * --------- new -------------
     parser.add_argument("--fix_starting_point", default=True, type=bool)
     parser.add_argument("--adj_R", default=-1., type=float)
-    parser.add_argument("--ME", action="store_true")
+    parser.add_argument("--ME_train", action="store_true")
+    parser.add_argument("--ME_eval", action="store_true")
     parser.add_argument("--per_timestep_TD", action="store_true")
+    parser.add_argument("--rand_train", action="store_true")
+    parser.add_argument("--rand_eval", action="store_true")
+    parser.add_argument("--max_random_trans_step", type=int, default=100)
 
 
     # Off-policy correction (from HIRO)

@@ -45,7 +45,7 @@ def evaluate_policy(env,
                     ):
     print("Starting evaluation number {}...".format(eval_idx))
     env.evaluate = True
-    if args.ME:
+    if args.ME_eval:
         manager_propose_frequency = 1
     if args.visualize:
         save_dir = os.path.join(args.load_dir, "videos")
@@ -62,7 +62,8 @@ def evaluate_policy(env,
             if args.visualize:
                 imgs = []
                 imgs.append(env.render())
-
+            if args.rand_eval:
+                random_trans_step = np.random.randint(1, args.max_random_trans_step)
             goal = obs["desired_goal"]
             achieved_goal = obs["achieved_goal"]
             state = obs["observation"]
@@ -146,6 +147,10 @@ def evaluate_policy(env,
                     plt.close()
                 action = controller_policy.select_action(state, subgoal)
                 new_obs, reward, done, info = env.step(action)
+                
+                if args.rand_eval:
+                    if step_count == random_trans_step:
+                        new_obs = env.random_transition()
                 if args.visualize:
                     imgs.append(env.render())
                 is_success = info['is_success']
@@ -618,6 +623,9 @@ def run_higl(args):
             goal = obs["desired_goal"]
             achieved_goal = obs["achieved_goal"]
             state = obs["observation"]
+            
+            if args.rand_train:
+                random_trans_step = np.random.randint(1, args.max_random_trans_step)
             # print(f"-------------- episode_num {episode_num} --------------")
             # print("state: ", achieved_goal)
             # print("goal: ", goal)
@@ -657,6 +665,9 @@ def run_higl(args):
 
         next_tup, manager_reward, env_done, _ = env.step(action_copy)
 
+        if args.rand_train:
+            if episode_timesteps == random_trans_step:
+                next_tup = env.random_transition()
         # Update cumulative reward for the manager
         manager_transition['reward'] += manager_reward * args.man_rew_scale
 
@@ -720,7 +731,7 @@ def run_higl(args):
             manager_transition['done'] = float(done)
             manager_buffer.add(manager_transition)
 
-        if args.ME or timesteps_since_subgoal % args.manager_propose_freq == 0:
+        if args.ME_train or timesteps_since_subgoal % args.manager_propose_freq == 0:
             subgoal = manager_policy.sample_goal(state, goal)
             train_data["h_state_x"].append(state[0])
             train_data["h_state_y"].append(state[1])

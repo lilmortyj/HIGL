@@ -573,6 +573,9 @@ class MazeEnv(gym.Env):
         return np.concatenate([wrapped_obs, range_sensor_obs.flat] + view + [[self.t * 0.001]])
         #return np.concatenate([wrapped_obs, range_sensor_obs.flat] + view)
 
+    def get_obs(self):
+        return self._get_obs()
+    
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]

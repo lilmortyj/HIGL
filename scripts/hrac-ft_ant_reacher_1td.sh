@@ -10,5 +10,6 @@ CUDA_VISIBLE_DEVICES=${GPU} python main.py \
 --load \
 --load_dir "./models/20230901133750" \
 --save_models \
---ME \
+--ME_train \
+--ME_eval \
 --per_timestep_TD

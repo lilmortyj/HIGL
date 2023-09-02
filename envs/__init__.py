@@ -237,6 +237,17 @@ class EnvWithGoal(object):
     @property
     def action_space(self):
         return self.base_env.action_space
+    
+    def random_transition(self):
+        xy = np.random.uniform(-9.5, 9.5, 2)
+        self.base_env.wrapped_env.set_xy(xy)
+        obs = self.base_env.get_obs()
+        obs_dict = {
+            'observation': obs.copy(),
+            'achieved_goal': obs[:self.goal_dim],
+            'desired_goal': self.desired_goal,
+        }
+        return obs_dict
 
 
 # def run_environment(env_name, episode_length, num_episodes):
