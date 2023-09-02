@@ -10,12 +10,16 @@ parser.add_argument("--reward_shaping", type=str, default="dense", choices=["den
 parser.add_argument("--stochastic_xy", action="store_true")
 parser.add_argument("--stochastic_sigma", default=0., type=float)
 parser.add_argument("--gid", type=int, default=0)
-parser.add_argument("--algo", default="higl", type=str, choices=["higl", "hrac", "hiro", "td3"])
+parser.add_argument("--algo", default="higl", type=str, choices=["higl", "hrac", "hiro", "td3", "hrac-ft"])
 parser.add_argument("--seed", default=2, type=int)
 parser.add_argument("--eval_freq", default=5e3, type=float)
 parser.add_argument("--max_timesteps", default=5e6, type=float)
+# * --------- new -------------
 parser.add_argument("--fix_starting_point", default=True, type=bool)
 parser.add_argument("--adj_R", default=-1., type=float)
+parser.add_argument("--ME", action="store_true")
+parser.add_argument("--per_timestep_TD", action="store_true")
+
 
 # Off-policy correction (from HIRO)
 parser.add_argument("--no_correction", action="store_true")
@@ -106,6 +110,7 @@ parser.add_argument("--load_replay_buffer", type=str)
 parser.add_argument("--load_adj_net", default=False, action="store_true")
 
 # Evaluation
+# * --------- new -------------
 parser.add_argument("--evaluate", action="store_true")
 parser.add_argument("--h_v_heatmap", action="store_true")
 parser.add_argument("--visualize", action="store_true")

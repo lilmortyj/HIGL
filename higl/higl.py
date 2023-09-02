@@ -173,16 +173,19 @@ class Manager(object):
         scaled_norm_direction[scaled_norm_direction != scaled_norm_direction] = 0
         return pseudo_landmarks, scaled_norm_direction.mean(dim=0)
 
-    def actor_loss(self, state, achieved_goal, goal, a_net, r_margin, selected_landmark=None, no_pseudo_landmark=False):
+    def actor_loss(self, state, achieved_goal, goal, a_net, r_margin, selected_landmark=None, no_pseudo_landmark=False, real_distance=False):
         actions = self.actor(state, goal)
         eval = -self.critic.Q1(state, goal, actions).mean()
         norm = torch.norm(actions)*self.action_norm_reg
-        if a_net is None:
+        if a_net is None and real_distance == False:
             return eval + norm  # HIRO
 
         scaled_norm_direction = var(torch.FloatTensor([0.] * self.action_dim))
         gen_subgoal = actions if self.absolute_goal else achieved_goal + actions
-        goal_loss = torch.clamp(F.pairwise_distance(a_net(achieved_goal), a_net(gen_subgoal)) - r_margin, min=0.).mean()
+        if real_distance:
+            goal_loss = torch.clamp(F.pairwise_distance(achieved_goal, gen_subgoal) - 2.0, min=0.).mean()
+        else:
+            goal_loss = torch.clamp(F.pairwise_distance(a_net(achieved_goal), a_net(gen_subgoal)) - r_margin, min=0.).mean()
         if selected_landmark is None:
             return eval + norm, goal_loss, None, scaled_norm_direction  # HRAC
 
@@ -315,6 +318,12 @@ class Manager(object):
 
                 actor_loss, goal_loss, _, _ = \
                     self.actor_loss(state, achieved_goal, goal, a_net, r_margin, selected_landmark=None)
+                actor_loss = actor_loss + self.goal_loss_coeff * goal_loss
+                avg_goal_loss += goal_loss
+            
+            elif algo == "hrac-ft":
+                actor_loss, goal_loss, _, _ = \
+                    self.actor_loss(state, achieved_goal, goal, a_net, r_margin, selected_landmark=None, real_distance=True)
                 actor_loss = actor_loss + self.goal_loss_coeff * goal_loss
                 avg_goal_loss += goal_loss
 

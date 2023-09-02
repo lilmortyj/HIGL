@@ -47,6 +47,8 @@ def evaluate_policy(env,
                     ):
     print("Starting evaluation number {}...".format(eval_idx))
     env.evaluate = True
+    if args.ME:
+        manager_propose_frequency = 1
     if args.visualize:
         save_dir = os.path.join(args.load_dir, "videos")
         if not os.path.exists(save_dir):
@@ -279,6 +281,11 @@ def run_higl(args):
         else:
             no_xy = False
 
+    if args.per_timestep_TD:
+        args.manager_propose_freq = 1
+    if args.algo == 'hrac-ft':
+        args.no_correction = True
+    
     obs = env.reset()
     print("obs: ", obs)
 
@@ -414,8 +421,11 @@ def run_higl(args):
 
     if args.load:
         try:
-            manager_policy.load(args.load_dir, args.env_name, args.load_algo, args.version, args.seed)
-            controller_policy.load(args.load_dir, args.env_name, args.load_algo, args.version, args.seed)
+            if args.algo == "hrac-ft":
+                controller_policy.load(args.load_dir, args.env_name, "td3", args.version, args.seed)
+            else:
+                manager_policy.load(args.load_dir, args.env_name, args.load_algo, args.version, args.seed)
+                controller_policy.load(args.load_dir, args.env_name, args.load_algo, args.version, args.seed)
             print("Loaded successfully.")
             just_loaded = True
         except Exception as e:
@@ -471,12 +481,15 @@ def run_higl(args):
             if total_timesteps != 0 and not just_loaded:
                 if episode_num % 10 == 0:
                     print("Episode {}".format(episode_num))
-                # Train controller
-                ctrl_act_loss, ctrl_crit_loss = controller_policy.train(controller_buffer,
-                                                                        episode_timesteps,
-                                                                        batch_size=args.ctrl_batch_size,
-                                                                        discount=args.ctrl_discount,
-                                                                        tau=args.ctrl_tau)
+                if args.algo == "hrac-ft":
+                    ctrl_act_loss, ctrl_crit_loss = 0., 0.
+                else:
+                    # Train controller
+                    ctrl_act_loss, ctrl_crit_loss = controller_policy.train(controller_buffer,
+                                                                            episode_timesteps,
+                                                                            batch_size=args.ctrl_batch_size,
+                                                                            discount=args.ctrl_discount,
+                                                                            tau=args.ctrl_tau)
                 if episode_num % 10 == 0:
                     print("Controller actor loss: {:.3f}".format(ctrl_act_loss))
                     print("Controller critic loss: {:.3f}".format(ctrl_crit_loss))
@@ -489,7 +502,6 @@ def run_higl(args):
                 if timesteps_since_manager >= args.train_manager_freq:  # * 10
                     timesteps_since_manager = 0
                     r_margin = (args.r_margin_pos + args.r_margin_neg) / 2
-
                     man_act_loss, man_crit_loss, man_goal_loss, man_ld_loss, avg_scaled_norm_direction = \
                         manager_policy.train(args.algo,
                                              controller_policy,
@@ -710,6 +722,7 @@ def run_higl(args):
             manager_transition['done'] = float(done)
             manager_buffer.add(manager_transition)
 
+        if args.ME or timesteps_since_subgoal % args.manager_propose_freq == 0:
             subgoal = manager_policy.sample_goal(state, goal)
             train_data["h_state_x"].append(state[0])
             train_data["h_state_y"].append(state[1])
@@ -718,6 +731,7 @@ def run_higl(args):
             else:
                 subgoal = man_noise.perturb_action(subgoal, min_action=-man_scale, max_action=man_scale)
 
+        if timesteps_since_subgoal % args.manager_propose_freq == 0:
             # Reset number of timesteps since we sampled a subgoal
             writer.add_scalar("data/manager_ep_rew", manager_transition['reward'], total_timesteps)
             timesteps_since_subgoal = 0
