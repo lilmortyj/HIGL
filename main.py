@@ -24,9 +24,12 @@ if __name__ == "__main__":
     parser.add_argument("--ME_train", action="store_true")
     parser.add_argument("--ME_eval", action="store_true")
     parser.add_argument("--per_timestep_TD", action="store_true")
+    parser.add_argument("--per_timestep_collect", action="store_true")
     parser.add_argument("--rand_train", action="store_true")
     parser.add_argument("--rand_eval", action="store_true")
     parser.add_argument("--max_random_trans_step", type=int, default=100)
+    parser.add_argument("--hrac_ft_load_algo", default="td3", type=str)
+    parser.add_argument("--hrac_ft_load_seed", default=2, type=int)
 
 
     # Off-policy correction (from HIRO)
@@ -133,10 +136,14 @@ if __name__ == "__main__":
     mp.set_start_method('spawn')
     TIMESTAMP = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
     
-    NUM_RUN = 3
+    if args.evaluate:
+        NUM_RUN = 1
+    else:
+        NUM_RUN = 3
     subprocess = []
     for s in range(NUM_RUN):
-        args.seed = s
+        if not args.evaluate:
+            args.seed = s
         args.TIMESTAMP = TIMESTAMP
         p = mp.Process(target=run_higl, args=(args,))
         p.start()

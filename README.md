@@ -57,6 +57,6 @@ Also, to run the MuJoCo experiments, a license is required (see [here](https://w
 
 - Ant Reacher
 ```
-./scripts/td3_ant_reacher.sh 0 2
+./scripts/td3_ant_reacher.sh 0
 xvfb-run -a -s "-screen 0 2000x2000x24" ./scripts/td3_ant_reacher_eval.sh 0 2
 ```

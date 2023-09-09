@@ -1,3 +1,4 @@
+import copy
 import itertools
 import cv2
 from matplotlib import pyplot as plt
@@ -425,7 +426,7 @@ def run_higl(args):
     if args.load:
         try:
             if args.algo == "hrac-ft":
-                controller_policy.load(args.load_dir, args.env_name, "td3", args.version, 2)
+                controller_policy.load(args.load_dir, args.env_name, args.hrac_ft_load_algo, args.version, args.hrac_ft_load_seed)
             else:
                 manager_policy.load(args.load_dir, args.env_name, args.load_algo, args.version, args.seed)
                 controller_policy.load(args.load_dir, args.env_name, args.load_algo, args.version, args.seed)
@@ -658,7 +659,26 @@ def run_higl(args):
                 'actions_seq': [],
                 'achieved_goal_seq': [achieved_goal]
             })
+            
+            if args.per_timestep_collect:
+                manager_transition_list = []
 
+        if args.per_timestep_collect:
+            empty_trans = OrderedDict({
+                'state': state,
+                'next_state': None,
+                'achieved_goal': achieved_goal,
+                'next_achieved_goal': None,
+                'goal': goal,
+                'action': subgoal,
+                'reward': 0,
+                'done': False,
+                'state_seq': [state],
+                'actions_seq': [],
+                'achieved_goal_seq': [achieved_goal]
+            })
+            manager_transition_list.append(empty_trans)
+        
         action = controller_policy.select_action(state, subgoal)
         action = ctrl_noise.perturb_action(action, -max_action, max_action)
         action_copy = action.copy()
@@ -670,6 +690,9 @@ def run_higl(args):
                 next_tup = env.random_transition()
         # Update cumulative reward for the manager
         manager_transition['reward'] += manager_reward * args.man_rew_scale
+        if args.per_timestep_collect:
+            for trans in manager_transition_list:
+                trans['reward'] += manager_reward * args.man_rew_scale
 
         next_goal = next_tup["desired_goal"]
         next_achieved_goal = next_tup['achieved_goal']
@@ -683,6 +706,11 @@ def run_higl(args):
         manager_transition['actions_seq'].append(action)
         manager_transition['state_seq'].append(next_state)
         manager_transition['achieved_goal_seq'].append(next_achieved_goal)
+        if args.per_timestep_collect:
+            for trans in manager_transition_list:
+                trans['actions_seq'].append(action)
+                trans['state_seq'].append(next_state)
+                trans['achieved_goal_seq'].append(next_achieved_goal)
 
         controller_reward = calculate_controller_reward(achieved_goal, subgoal, next_achieved_goal,
                                                         args.ctrl_rew_scale, action)
@@ -725,7 +753,14 @@ def run_higl(args):
         timesteps_since_manager += 1
         timesteps_since_subgoal += 1
 
-        if timesteps_since_subgoal % args.manager_propose_freq == 0:  # * 10
+        if args.per_timestep_collect:
+            if episode_timesteps >= args.manager_propose_freq:
+                trans = manager_transition_list.pop(0)
+                trans['next_state'] = state
+                trans['next_achieved_goal'] = achieved_goal
+                trans['done'] = float(done)
+                manager_buffer.add(trans)
+        elif timesteps_since_subgoal % args.manager_propose_freq == 0:  # * 10
             manager_transition['next_state'] = state
             manager_transition['next_achieved_goal'] = achieved_goal
             manager_transition['done'] = float(done)
