@@ -72,21 +72,25 @@ def ploter(data_list, key_words, name='result', ylabel='Avg. Success Rate'):
 if __name__ == '__main__':
     NUM_EVAL = 1
     NUM_SEED = 3
-    # ENV = 'AntReacher (ME, c=10)'
-    ENV = 'AntReacher (RandEval, c=10)'
+    ENV = 'AntReacher (c=10)'
+    # ENV = 'AntReacher (RandEval, c=10)'
     NUM_EPI = 5
     file_dirs = [
-        # ('../logs/AntReacher-v0/hrac-ft/dense', '20230902083811'),
-        # ('../logs/AntReacher-v0/hrac-ft/dense', '20230902084408'),
-        ('../logs/AntReacher-v0/hrac/dense', '20230902134119'),
-        ('../logs/AntReacher-v0/hrac/dense', '20230902134133'),
+        ('../logs/AntReacher-v0/hrac-ft/dense', '20230902083811'),
+        ('../logs/AntReacher-v0/hrac-ft/dense', '20230902084408'),
+        ('../logs/AntReacher-v0/hrac-ft/dense', '20230909082012'),
+        ('../logs/AntReacher-v0/hrac-ft/dense', '20230909082601'),
+        # ('../logs/AntReacher-v0/hrac/dense', '20230902134119'),
+        # ('../logs/AntReacher-v0/hrac/dense', '20230902134133'),
     ]
     y_labels = ['Avg. Success Rate', 'Avg. Steps2Finish']
     algos = [
-        # 'hrac-ft-1td',
-        # 'hrac-ft-10td',
-        'hrac-sme',
-        'hrac-me',
+        'hrac-ft-me-1td',
+        'hrac-ft-me-10td',
+        'hrac-ft-me-10td-1collect',
+        'hrac-ft-sme',
+        # 'hrac-sme',
+        # 'hrac-me',
     ]
     until = 5500000
     # dirty_to_del = [10000101, 10050000]
